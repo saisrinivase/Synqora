@@ -851,10 +851,15 @@ export async function seedPostgresDemoData() {
     ),
     (
       ${sqlString(ids.projectTwoId)}, ${sqlString(ids.tenantId)}, 'HRDW-002', 'HR Analytics Warehouse',
-      'Assessment-first modernization program with staged conversion.', 'assessment', 'oracle', 'postgresql',
+      'Assessment-first modernization program with staged conversion.', 'assessment', 'oracle', 'not_selected',
       'assessment', 'saas_standard', ${sqlString(ids.userId)}, 12984, 0, 0.0, 6, 33, 'assessment', now(), now()
     )
-    ON CONFLICT (project_id) DO NOTHING;
+    ON CONFLICT (project_id) DO UPDATE
+    SET target_engine = CASE
+          WHEN synqora_core.migration_project.engagement_mode = 'assessment' THEN 'not_selected'
+          ELSE EXCLUDED.target_engine
+        END,
+        updated_at = now();
 
     INSERT INTO synqora_core.environment (
       environment_id, tenant_id, project_id, environment_name, environment_type, network_zone, cloud_provider,

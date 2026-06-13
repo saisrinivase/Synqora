@@ -87,7 +87,7 @@ export class SynqoraStore {
           description: 'Assessment-first modernization program with staged conversion.',
           status: 'assessment',
           sourceEngine: 'oracle',
-          targetEngine: 'postgresql',
+          targetEngine: 'not_selected',
           engagementMode: 'assessment',
           deploymentMode: 'saas_standard',
           ownerUserId: userId,

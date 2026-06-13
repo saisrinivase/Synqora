@@ -132,6 +132,10 @@ export function buildPipelineStages(currentStage, projectStatus = 'in_progress')
 
 export function humanizeEngine(engine) {
   switch ((engine || '').toLowerCase()) {
+    case 'not_selected':
+    case 'target_tbd':
+    case 'tbd':
+      return 'Target TBD';
     case 'oracle':
       return 'Oracle';
     case 'postgresql':
@@ -171,6 +175,10 @@ function uniqueById(items, keyName) {
 }
 
 function buildEnvironmentSnapshot(environment, project) {
+  if (!environment) {
+    return null;
+  }
+
   const settings = environment?.settingsJson || environment?.settings || {};
   const isSource = environment?.environmentType === 'source';
 

@@ -26,7 +26,7 @@ The repository now includes a runnable V1 scaffold:
 - `Synqora Agent`
   - a lightweight Node.js CLI for register / heartbeat / poll / run-once flows
 - `UI prototype`
-  - the existing dashboard served by the cloud service, with SaaS login, top-level stats hydrated from the API, and connection-first onboarding visible in the UX
+  - the existing dashboard served by the cloud service, with SaaS login, top-level stats hydrated from the API, enterprise workspace hierarchy, project creation, and separate database connection onboarding visible in the UX
 
 This is intentionally a thin implementation slice. It proves the product shape without locking us into a heavy framework too early.
 
@@ -102,15 +102,28 @@ The architecture is organized into four planes:
 
 ## Connection-First Product Flow
 
-For a real Oracle-to-PostgreSQL product, the first user-facing action should be connection onboarding, not schema analysis.
+For a real Oracle-to-PostgreSQL product, the first user-facing action should be creating the business project context and then attaching database connections to that context.
 
-That means `Synqora` should first:
+The product hierarchy should be:
 
-- register the `Oracle source` endpoint
-- register the `PostgreSQL target` endpoint
-- select the `Synqora Agent` runtime that can actually reach both systems
-- validate connectivity, privileges, and policy boundaries from that agent
-- capture target capabilities before conversion or deployment starts
+- `Organization / Tenant`
+  - customer boundary, users, roles, policies, audit trail, and SSO
+- `Business Unit / Portfolio`
+  - Finance, HR, Supply Chain, or other operating groups with separate ownership and budgets
+- `Migration Project`
+  - business initiative such as ERP Core, HR Warehouse, or Billing Modernization
+- `Database Connection Profiles`
+  - reusable Oracle source and PostgreSQL target endpoints attached to one project or shared across a portfolio
+
+That means `Synqora` should support:
+
+- creating a project without forcing immediate target database details
+- running `Assessment Only` with just Oracle source metadata access
+- registering one or many `Oracle source` endpoints under the project or business unit
+- adding `PostgreSQL target` endpoints later when conversion, deployment, load, CDC, or validation begins
+- selecting the `Synqora Agent` runtime that can actually reach the relevant source and target systems
+- validating connectivity, privileges, and policy boundaries from that agent
+- capturing target capabilities only when they are needed for conversion or deployment
 
 Architecturally, the preferred model is:
 
@@ -122,6 +135,8 @@ Architecturally, the preferred model is:
   - executes discovery, extraction, load, and CDC near the databases
 
 This avoids assuming that the SaaS layer can directly log in to customer Oracle or PostgreSQL systems, which is usually the wrong default for enterprise environments.
+
+Assessment should not require target details. The assessment phase should discover Oracle inventory, PL/SQL/code complexity, storage, data volumes, feature usage, semantic risks, and migration effort. The target platform choice can be made after sizing, compatibility scoring, extension review, HA/DR requirements, and cloud/provider constraints are understood.
 
 ## SaaS Account Model
 

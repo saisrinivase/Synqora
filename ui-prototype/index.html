@@ -212,58 +212,61 @@
       <div class="connection-onboarding glass-card">
         <div class="connection-onboarding-header">
           <div>
-            <h3>Connection-First Onboarding</h3>
-            <p class="table-note">Before discovery starts, Synqora should register the Oracle source, validate the PostgreSQL target, and prove the agent can reach both endpoints.</p>
+            <h3>Enterprise Migration Workspace</h3>
+            <p class="table-note">One organization can contain multiple business units, each with many migration projects and many database connections. Create the project first, then attach source and target connections as the migration matures.</p>
           </div>
-          <button class="btn btn-primary" data-open-modal="new-project">Connect Source &amp; Target</button>
+          <div class="header-actions">
+            <button class="btn btn-ghost" data-open-modal="database-connection">Create Database Connection</button>
+            <button class="btn btn-primary" data-open-modal="new-project">New Project</button>
+          </div>
         </div>
         <div class="connection-onboarding-grid">
           <div class="connection-panel">
             <div class="connection-panel-title">
-              <span class="project-badge oracle">Source</span>
-              <strong>Oracle Source</strong>
+              <span class="project-badge pg">Org</span>
+              <strong>Organization</strong>
             </div>
             <div class="connection-chip-list">
-              <span class="status-badge running">Host / Port</span>
-              <span class="status-badge pending">Service / SID</span>
-              <span class="status-badge pending">Read Privileges</span>
+              <span class="status-badge completed">Tenant Boundary</span>
+              <span class="status-badge running">RBAC</span>
+              <span class="status-badge pending">SSO</span>
             </div>
             <ul class="connection-checklist">
-              <li>Register Oracle endpoint and schema scope</li>
-              <li>Test network reachability from the Synqora agent</li>
-              <li>Validate discovery, metadata, and CDC prerequisites</li>
+              <li>Owns users, roles, business units, policies, and audit history</li>
+              <li>Separates one customer from another in the SaaS control plane</li>
+              <li>Controls global guardrails for secrets, approvals, and cutover</li>
             </ul>
           </div>
           <div class="connection-panel">
             <div class="connection-panel-title">
-              <span class="project-badge pg">Runtime</span>
-              <strong>Synqora Agent Plane</strong>
+              <span class="project-badge oracle">BU</span>
+              <strong>Business Unit / Portfolio</strong>
             </div>
             <div class="connection-chip-list">
-              <span class="status-badge completed">Customer Network</span>
-              <span class="status-badge pending">Credential Vault</span>
-              <span class="status-badge pending">Policy Check</span>
+              <span class="status-badge completed">Finance</span>
+              <span class="status-badge running">HR</span>
+              <span class="status-badge pending">Supply Chain</span>
             </div>
             <ul class="connection-checklist">
-              <li>Deploy the agent near source and target systems</li>
-              <li>Keep database credentials in the customer-managed plane</li>
-              <li>Return only health, evidence, and execution status to SaaS</li>
+              <li>Groups applications and databases by owner, budget, and timeline</li>
+              <li>Lets one organization run many parallel migration programs</li>
+              <li>Supports portfolio-level reporting and prioritization</li>
             </ul>
           </div>
           <div class="connection-panel">
             <div class="connection-panel-title">
-              <span class="project-badge pg">Target</span>
-              <strong>PostgreSQL Target</strong>
+              <span class="project-badge pg">DB</span>
+              <strong>Database Connections</strong>
             </div>
             <div class="connection-chip-list">
-              <span class="status-badge running">DB / Schema</span>
-              <span class="status-badge pending">DDL Rights</span>
-              <span class="status-badge pending">Extension Policy</span>
+              <span class="status-badge running">Source First</span>
+              <span class="status-badge pending">Target Later</span>
+              <span class="status-badge completed">Agent Tested</span>
             </div>
             <ul class="connection-checklist">
-              <li>Register PostgreSQL endpoint, database, and target schema</li>
-              <li>Validate bootstrap rights, storage, and connectivity</li>
-              <li>Capture target capabilities before conversion and load</li>
+              <li>Assessment can start with only Oracle source metadata access</li>
+              <li>Target PostgreSQL details are required later for conversion, deploy, load, CDC, and validation</li>
+              <li>SaaS stores metadata and evidence, not raw database passwords</li>
             </ul>
           </div>
         </div>
@@ -1475,45 +1478,62 @@
   <div class="modal-overlay" id="modalOverlay">
     <div class="modal glass-card" id="newProjectModal">
       <div class="modal-header">
-        <h2>Connect Source &amp; Target</h2>
+        <h2>Create Migration Project</h2>
         <button class="modal-close" onclick="closeModal()">&times;</button>
       </div>
       <div class="modal-body">
-        <div class="form-group">
-          <label>Project Name</label>
-          <input type="text" class="form-input" placeholder="e.g., CRM Database Migration">
+        <div class="form-helper-banner">
+          A project is the business wrapper for a migration initiative. Create it under the right organization and business unit first; attach source and target database connections separately as the work moves from assessment to conversion, load, CDC, and validation.
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Source Engine</label>
-            <select class="form-input">
-              <option>Oracle 19c</option>
-              <option>Oracle 12c</option>
-              <option>Oracle 11g</option>
-              <option>SQL Server 2019</option>
-            </select>
+            <label>Organization</label>
+            <input type="text" class="form-input" value="Synqora Demo Tenant" readonly>
           </div>
           <div class="form-group">
-            <label>Target Engine</label>
+            <label>Business Unit</label>
             <select class="form-input">
-              <option>PostgreSQL 16</option>
-              <option>PostgreSQL 15</option>
-              <option>Aurora PostgreSQL</option>
-              <option>Cloud SQL PostgreSQL</option>
+              <option>Finance</option>
+              <option>Human Resources</option>
+              <option>Supply Chain</option>
+              <option>Customer Experience</option>
+              <option>Platform Engineering</option>
             </select>
           </div>
         </div>
-        <div class="form-helper-banner">
-          Synqora should not assume direct SaaS database access. The normal model is: register endpoints in the control plane, then let a customer-side Synqora agent test and use those connections.
+        <div class="form-row">
+          <div class="form-group">
+            <label>Project Code</label>
+            <input type="text" class="form-input" placeholder="FIN-ERP-001">
+          </div>
+          <div class="form-group">
+            <label>Project Name</label>
+            <input type="text" class="form-input" placeholder="ERP Core Modernization">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Application / System Owner</label>
+            <input type="text" class="form-input" placeholder="Finance Applications">
+          </div>
+          <div class="form-group">
+            <label>Business Criticality</label>
+            <select class="form-input">
+              <option>Tier 1 - Mission Critical</option>
+              <option>Tier 2 - Business Critical</option>
+              <option>Tier 3 - Standard</option>
+              <option>Sandbox / Non-production</option>
+            </select>
+          </div>
         </div>
         <div class="form-group">
-          <label>Migration Mode</label>
+          <label>Project Mode</label>
           <div class="mode-cards">
             <label class="mode-card">
               <input type="radio" name="mode" value="assessment" checked>
               <div class="mode-card-content">
                 <strong>Assessment Only</strong>
-                <span>Discover, analyze, and report</span>
+                <span>Source Oracle only; no target required</span>
               </div>
             </label>
             <label class="mode-card">
@@ -1541,33 +1561,153 @@
         </div>
         <div class="form-section">
           <div class="form-section-header">
-            <h3>Source Oracle Connection</h3>
-            <span class="status-badge running">Connect First</span>
+            <h3>Assessment Scope</h3>
+            <span class="status-badge running">Source First</span>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label>Oracle Host</label>
+              <label>Source Engine Family</label>
+              <select class="form-input">
+                <option>Oracle</option>
+                <option>SQL Server</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Initial Source Database</label>
+              <input type="text" class="form-input" placeholder="FINPROD Oracle 19c">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Schema / Application Scope</label>
+              <input type="text" class="form-input" placeholder="FINANCE_CORE, PAYABLES, RECEIVABLES">
+            </div>
+            <div class="form-group">
+              <label>Planned Start Window</label>
+              <input type="text" class="form-input" placeholder="Q3 assessment wave">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Primary Assessment Goal</label>
+              <input type="text" class="form-input" placeholder="Complexity, effort, risk, and target recommendation">
+            </div>
+            <div class="form-group">
+              <label>Preferred Agent Zone</label>
+              <input type="text" class="form-input" placeholder="customer-onprem-east">
+            </div>
+          </div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-header">
+            <h3>Target Strategy</h3>
+            <span class="status-badge idle">Optional For Assessment</span>
+          </div>
+          <ul class="connection-checklist compact">
+            <li>Target PostgreSQL connection is not needed to run the first Oracle assessment</li>
+            <li>Choose target platform after sizing, compatibility scoring, extension review, and HA/DR requirements</li>
+            <li>Attach one or more target database connections later for conversion, deployment, load, CDC, and validation</li>
+          </ul>
+        </div>
+        <div class="form-section">
+          <div class="form-section-header">
+            <h3>Governance</h3>
+            <span class="status-badge pending">Enterprise Guardrail</span>
+          </div>
+          <ul class="connection-checklist compact">
+            <li>Assign project owner, reviewer, and approver roles before conversion or cutover</li>
+            <li>Keep source and target credentials in customer-managed vaults or agent-local secret stores</li>
+            <li>Record assessment evidence and approvals under the project audit trail</li>
+          </ul>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="closeModal()">Create Project</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Database Connection Modal -->
+  <div class="modal-overlay" id="connectionModalOverlay">
+    <div class="modal glass-card">
+      <div class="modal-header">
+        <h2>Create Database Connection</h2>
+        <button class="modal-close" onclick="closeConnectionModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-helper-banner">
+          Database connections are reusable endpoint profiles under a business unit or project. Synqora Cloud stores metadata and validation evidence; the customer-side agent performs the real network and credential checks.
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Business Unit</label>
+            <select class="form-input">
+              <option>Finance</option>
+              <option>Human Resources</option>
+              <option>Supply Chain</option>
+              <option>Customer Experience</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Attach To Project</label>
+            <select class="form-input">
+              <option>ERP Core - FINPROD</option>
+              <option>HR Analytics Warehouse</option>
+              <option>Reusable portfolio connection</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Connection Role</label>
+            <select class="form-input">
+              <option>Source - Oracle assessment/discovery</option>
+              <option>Source - Oracle CDC capture</option>
+              <option>Target - PostgreSQL deployment/load</option>
+              <option>Target - PostgreSQL validation</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Database Engine</label>
+            <select class="form-input">
+              <option>Oracle 19c</option>
+              <option>Oracle 12c</option>
+              <option>PostgreSQL 16</option>
+              <option>Aurora PostgreSQL</option>
+              <option>Cloud SQL PostgreSQL</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-header">
+            <h3>Endpoint Metadata</h3>
+            <span class="status-badge running">No Password Stored</span>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Host</label>
               <input type="text" class="form-input" placeholder="oraprod.company.net">
             </div>
             <div class="form-group">
-              <label>Listener Port</label>
-              <input type="text" class="form-input" placeholder="1521">
+              <label>Port</label>
+              <input type="text" class="form-input" placeholder="1521 or 5432">
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label>Service Name / SID</label>
-              <input type="text" class="form-input" placeholder="FINPROD or ORCL">
+              <label>Service / Database Name</label>
+              <input type="text" class="form-input" placeholder="FINPROD or finance_migration">
             </div>
             <div class="form-group">
-              <label>Source Schema Scope</label>
+              <label>Schema Scope</label>
               <input type="text" class="form-input" placeholder="FINANCE_CORE, HR_APP">
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label>Discovery User</label>
-              <input type="text" class="form-input" placeholder="synqora_readonly">
+              <label>Credential Reference</label>
+              <input type="text" class="form-input" placeholder="vault://finance/oracle/readonly">
             </div>
             <div class="form-group">
               <label>Agent Network Zone</label>
@@ -1577,55 +1717,19 @@
         </div>
         <div class="form-section">
           <div class="form-section-header">
-            <h3>Target PostgreSQL Connection</h3>
-            <span class="status-badge pending">Validate Before Deploy</span>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>PostgreSQL Host</label>
-              <input type="text" class="form-input" placeholder="pg-fin-prod.us-east-1.rds.amazonaws.com">
-            </div>
-            <div class="form-group">
-              <label>Port</label>
-              <input type="text" class="form-input" placeholder="5432">
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Database Name</label>
-              <input type="text" class="form-input" placeholder="finance_migration">
-            </div>
-            <div class="form-group">
-              <label>Target Schema</label>
-              <input type="text" class="form-input" placeholder="finance_core">
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Deployment User</label>
-              <input type="text" class="form-input" placeholder="synqora_deployer">
-            </div>
-            <div class="form-group">
-              <label>SSL / Connectivity Policy</label>
-              <input type="text" class="form-input" placeholder="require, private subnet, no public ingress">
-            </div>
-          </div>
-        </div>
-        <div class="form-section">
-          <div class="form-section-header">
-            <h3>Connectivity Validation Plan</h3>
-            <span class="status-badge idle">Architectural Gate</span>
+            <h3>Validation Plan</h3>
+            <span class="status-badge pending">Agent Executed</span>
           </div>
           <ul class="connection-checklist compact">
-            <li>Test Oracle connectivity from the selected Synqora agent</li>
-            <li>Test PostgreSQL connectivity and deployment permissions</li>
-            <li>Persist only connection metadata in SaaS, not raw credentials</li>
+            <li>Check network reachability from the selected Synqora agent</li>
+            <li>Verify least-privilege permissions for discovery, conversion, load, CDC, or validation role</li>
+            <li>Store validation evidence and failures under the project audit trail</li>
           </ul>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-        <button class="btn btn-primary" onclick="closeModal()">Register Connections</button>
+        <button class="btn btn-ghost" onclick="closeConnectionModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="closeConnectionModal()">Create Connection Profile</button>
       </div>
     </div>
   </div>

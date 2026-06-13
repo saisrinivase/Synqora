@@ -474,6 +474,16 @@ function buildSourceRows(payload) {
 function buildTargetRows(payload) {
   const target = payload.targetEnvironment || {};
   const project = payload.project || {};
+
+  if (!payload.targetEnvironment || project.targetEngine === 'not_selected') {
+    return [
+      detailRow('Target Selection', statusBadge('Not Required For Assessment', 'idle')),
+      detailRow('Recommended Timing', 'After source assessment and sizing'),
+      detailRow('Decision Needed', 'PostgreSQL flavor, hosting model, HA/DR, extensions'),
+      detailRow('Next Step', 'Create target connection when conversion or load is approved')
+    ];
+  }
+
   return [
     detailRow('Engine', target.engineVersion || 'PostgreSQL'),
     detailRow('Host', target.host || '-', 'mono'),
@@ -640,6 +650,10 @@ function engineBadgeLabel(engine) {
       return 'Oracle';
     case 'postgresql':
       return 'PostgreSQL';
+    case 'not_selected':
+    case 'target_tbd':
+    case 'tbd':
+      return 'Target TBD';
     default:
       return engine || 'Unknown';
   }
@@ -1024,11 +1038,19 @@ function initSparkline() {
 // ---- Modal ----
 function initModalHandlers() {
   const openButtons = document.querySelectorAll('[data-open-modal="new-project"]');
+  const connectionButtons = document.querySelectorAll('[data-open-modal="database-connection"]');
   const overlay = document.getElementById('modalOverlay');
+  const connectionOverlay = document.getElementById('connectionModalOverlay');
 
   openButtons.forEach((button) => {
     button.addEventListener('click', () => {
       if (overlay) overlay.classList.add('visible');
+    });
+  });
+
+  connectionButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      if (connectionOverlay) connectionOverlay.classList.add('visible');
     });
   });
 
@@ -1038,14 +1060,28 @@ function initModalHandlers() {
     });
   }
 
+  if (connectionOverlay) {
+    connectionOverlay.addEventListener('click', (e) => {
+      if (e.target === connectionOverlay) closeConnectionModal();
+    });
+  }
+
   // Escape key
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeModal();
+    if (e.key === 'Escape') {
+      closeModal();
+      closeConnectionModal();
+    }
   });
 }
 
 function closeModal() {
   const overlay = document.getElementById('modalOverlay');
+  if (overlay) overlay.classList.remove('visible');
+}
+
+function closeConnectionModal() {
+  const overlay = document.getElementById('connectionModalOverlay');
   if (overlay) overlay.classList.remove('visible');
 }
 
