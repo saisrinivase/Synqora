@@ -144,6 +144,10 @@ The working prototype now includes a local SaaS-style login boundary:
 
 - `User login`
   - browser users authenticate through `Synqora Cloud`
+- `Create account`
+  - email/password signup creates a new organization tenant and owner user
+- `Provider entry points`
+  - Google, GitHub, and Company SSO buttons are present in the UI for production OAuth/OIDC/SAML integration
 - `Tenant context`
   - projects, dashboards, agents, and jobs are shown under the signed-in tenant
 - `HTTP-only session cookie`
@@ -157,6 +161,8 @@ Local demo account:
 - Password: `Synqora_123`
 
 For production, this local demo verifier should be replaced by OIDC/SAML SSO, MFA, SCIM provisioning, role-based access control, session revocation, and audit logging.
+
+Local email signup is functional for prototype validation. Passwords are stored as salted PBKDF2 hashes in the local control-plane database, not as raw plaintext.
 
 ## Current Repository Contents
 

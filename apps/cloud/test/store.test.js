@@ -16,6 +16,30 @@ test('demo SaaS login returns tenant-scoped user context', () => {
   assert.equal(context.role, 'admin');
 });
 
+test('email signup creates a new tenant-scoped owner account', () => {
+  const store = new SynqoraStore();
+  const context = store.createUserAccount({
+    email: 'new.owner@example.com',
+    password: 'StrongPass123',
+    displayName: 'New Owner',
+    organizationName: 'New Migration Org'
+  });
+
+  assert.equal(context.user.email, 'new.owner@example.com');
+  assert.equal(context.tenant.name, 'New Migration Org');
+  assert.equal(context.role, 'owner');
+
+  const signedIn = store.authenticateUser({
+    email: 'new.owner@example.com',
+    password: 'StrongPass123'
+  });
+  assert.equal(signedIn.tenant.tenantId, context.tenant.tenantId);
+
+  const dashboard = store.getDashboard(signedIn);
+  assert.equal(dashboard.tenant.name, 'New Migration Org');
+  assert.equal(dashboard.projects.length, 0);
+});
+
 test('agent registration creates a usable agent identity', () => {
   const store = new SynqoraStore();
   const registered = store.registerAgent({

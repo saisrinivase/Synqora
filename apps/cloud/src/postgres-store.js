@@ -7,11 +7,14 @@ import {
   DEFAULT_CAPABILITIES,
   buildProjectOverviewPayload,
   capabilityForJob,
+  createPasswordRecord,
   createSeedIds,
   createToken,
   hashValue,
   nowIso,
-  priorityRank
+  priorityRank,
+  slugifyTenantName,
+  verifyPassword
 } from './shared.js';
 import { runJsonArray, runJsonObject, runSql, sqlBoolean, sqlJson, sqlNullable, sqlString } from './psql.js';
 
@@ -27,7 +30,8 @@ function parseCapabilities(value) {
 }
 
 export class SynqoraPostgresStore {
-  async getDashboard() {
+  async getDashboard(context = null) {
+    const tenantId = context?.tenant?.tenantId;
     const tenant = await runJsonObject(`
       SELECT row_to_json(t)
       FROM (
@@ -38,14 +42,15 @@ export class SynqoraPostgresStore {
                deployment_tier AS "deploymentTier",
                region_home AS "regionHome"
         FROM synqora_core.tenant
+        ${tenantId ? `WHERE tenant_id = ${sqlString(tenantId)}` : ''}
         ORDER BY created_at
         LIMIT 1
       ) t;
     `);
 
-    const projects = await this.listProjects();
-    const jobs = await this.listJobs();
-    const agents = await this.listAgents();
+    const projects = await this.listProjects(context);
+    const jobs = await this.listJobs(context);
+    const agents = await this.listAgents(context);
 
     const activeProjects = projects.filter((project) => project.status !== 'archived');
 
@@ -70,7 +75,8 @@ export class SynqoraPostgresStore {
     };
   }
 
-  async listProjects() {
+  async listProjects(context = null) {
+    const tenantId = context?.tenant?.tenantId;
     return runJsonArray(`
       SELECT COALESCE(json_agg(row_to_json(p) ORDER BY p."createdAt"), '[]'::json)
       FROM (
@@ -94,11 +100,13 @@ export class SynqoraPostgresStore {
                created_at AS "createdAt",
                updated_at AS "updatedAt"
         FROM synqora_core.migration_project
+        ${tenantId ? `WHERE tenant_id = ${sqlString(tenantId)}` : ''}
       ) p;
     `);
   }
 
-  async listAgents() {
+  async listAgents(context = null) {
+    const tenantId = context?.tenant?.tenantId;
     return runJsonArray(`
       SELECT COALESCE(json_agg(row_to_json(a) ORDER BY a."registeredAt"), '[]'::json)
       FROM (
@@ -114,11 +122,13 @@ export class SynqoraPostgresStore {
                last_heartbeat_at AS "lastHeartbeatAt",
                capabilities_json AS "capabilities"
         FROM synqora_core.agent_instance
+        ${tenantId ? `WHERE tenant_id = ${sqlString(tenantId)}` : ''}
       ) a;
     `);
   }
 
-  async listJobs() {
+  async listJobs(context = null) {
+    const tenantId = context?.tenant?.tenantId;
     return runJsonArray(`
       SELECT COALESCE(json_agg(row_to_json(j) ORDER BY j."createdAt"), '[]'::json)
       FROM (
@@ -143,16 +153,13 @@ export class SynqoraPostgresStore {
                started_at AS "startedAt",
                completed_at AS "completedAt"
         FROM synqora_core.job_run
+        ${tenantId ? `WHERE tenant_id = ${sqlString(tenantId)}` : ''}
       ) j;
     `);
   }
 
   async authenticateUser({ email, password }) {
     const normalizedEmail = String(email || '').trim().toLowerCase();
-
-    if (normalizedEmail !== DEMO_LOGIN_EMAIL || password !== DEMO_LOGIN_PASSWORD) {
-      throw new Error('Invalid email or password');
-    }
 
     const context = await runJsonObject(`
       SELECT row_to_json(ctx)
@@ -174,8 +181,19 @@ export class SynqoraPostgresStore {
                  'deploymentTier', t.deployment_tier,
                  'regionHome', t.region_home
                ) AS tenant,
-               COALESCE(tu.default_role, 'admin') AS role
+               COALESCE(tu.default_role, 'admin') AS role,
+               json_build_object(
+                 'passwordHash', uai.password_hash,
+                 'salt', uai.password_salt,
+                 'algorithm', uai.password_algorithm,
+                 'iterations', uai.password_iterations
+               ) AS "passwordRecord"
         FROM synqora_core.user_account ua
+        JOIN synqora_core.user_auth_identity uai
+          ON uai.user_id = ua.user_id
+         AND uai.provider = 'local'
+         AND lower(uai.provider_subject) = ${sqlString(normalizedEmail)}
+         AND uai.status = 'active'
         JOIN synqora_core.tenant_user tu
           ON tu.user_id = ua.user_id
          AND tu.membership_status = 'active'
@@ -189,7 +207,7 @@ export class SynqoraPostgresStore {
       ) ctx;
     `);
 
-    if (!context) {
+    if (!context || !verifyPassword(password, context.passwordRecord)) {
       throw new Error('Invalid email or password');
     }
 
@@ -200,10 +218,92 @@ export class SynqoraPostgresStore {
       WHERE user_id = ${sqlString(context.user.userId)};
     `);
 
+    delete context.passwordRecord;
     return context;
   }
 
-  async getProjectOverview(projectId) {
+  async createUserAccount({ email, password, displayName, organizationName }) {
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+    const finalDisplayName = String(displayName || normalizedEmail.split('@')[0] || 'Synqora User').trim();
+    const finalOrganizationName = String(organizationName || `${finalDisplayName}'s Organization`).trim();
+
+    if (!normalizedEmail || !password || password.length < 8) {
+      throw new Error('A valid email and password with at least 8 characters are required');
+    }
+
+    const existing = await runJsonObject(`
+      SELECT json_build_object('userId', user_id)
+      FROM synqora_core.user_account
+      WHERE lower(email) = ${sqlString(normalizedEmail)}
+      LIMIT 1;
+    `);
+
+    if (existing) {
+      throw new Error('An account with this email already exists');
+    }
+
+    const tenantId = uuid();
+    const userId = uuid();
+    const passwordRecord = createPasswordRecord(password);
+    const slug = `${slugifyTenantName(finalOrganizationName)}-${tenantId.slice(0, 8)}`;
+
+    await runSql(`
+      BEGIN;
+      INSERT INTO synqora_core.tenant (
+        tenant_id, name, slug, status, deployment_tier, region_home, settings_json, created_at, updated_at
+      ) VALUES (
+        ${sqlString(tenantId)}, ${sqlString(finalOrganizationName)}, ${sqlString(slug)},
+        'active', 'saas_trial', 'us-east-1', '{}'::jsonb, now(), now()
+      );
+
+      INSERT INTO synqora_core.user_account (
+        user_id, email, display_name, status, auth_provider, auth_subject, last_login_at, created_at, updated_at
+      ) VALUES (
+        ${sqlString(userId)}, ${sqlString(normalizedEmail)}, ${sqlString(finalDisplayName)},
+        'active', 'local', ${sqlString(normalizedEmail)}, now(), now(), now()
+      );
+
+      INSERT INTO synqora_core.tenant_user (
+        tenant_user_id, tenant_id, user_id, membership_status, default_role, joined_at, created_at, updated_at
+      ) VALUES (
+        ${sqlString(uuid())}, ${sqlString(tenantId)}, ${sqlString(userId)}, 'active', 'owner', now(), now(), now()
+      );
+
+      INSERT INTO synqora_core.user_auth_identity (
+        auth_identity_id, user_id, provider, provider_subject, password_hash, password_salt,
+        password_algorithm, password_iterations, status, created_at, updated_at
+      ) VALUES (
+        ${sqlString(uuid())}, ${sqlString(userId)}, 'local', ${sqlString(normalizedEmail)},
+        ${sqlString(passwordRecord.passwordHash)}, ${sqlString(passwordRecord.salt)},
+        ${sqlString(passwordRecord.algorithm)}, ${passwordRecord.iterations}, 'active', now(), now()
+      );
+      COMMIT;
+    `);
+
+    return {
+      user: {
+        userId,
+        email: normalizedEmail,
+        displayName: finalDisplayName,
+        status: 'active',
+        createdAt: nowIso(),
+        updatedAt: nowIso(),
+        lastLoginAt: nowIso()
+      },
+      tenant: {
+        tenantId,
+        name: finalOrganizationName,
+        slug,
+        status: 'active',
+        deploymentTier: 'saas_trial',
+        regionHome: 'us-east-1'
+      },
+      role: 'owner'
+    };
+  }
+
+  async getProjectOverview(projectId, context = null) {
+    const tenantId = context?.tenant?.tenantId;
     const project = await runJsonObject(`
       SELECT row_to_json(p)
       FROM (
@@ -228,6 +328,7 @@ export class SynqoraPostgresStore {
                updated_at AS "updatedAt"
         FROM synqora_core.migration_project
         WHERE project_id = ${sqlString(projectId)}
+          ${tenantId ? `AND tenant_id = ${sqlString(tenantId)}` : ''}
         LIMIT 1
       ) p;
     `);
@@ -815,6 +916,7 @@ export class SynqoraPostgresStore {
 export async function seedPostgresDemoData() {
   const ids = createSeedIds();
   const tokenHash = hashValue(DEMO_REGISTRATION_TOKEN);
+  const demoPassword = createPasswordRecord(DEMO_LOGIN_PASSWORD);
 
   await runSql(`
     BEGIN;
@@ -838,6 +940,22 @@ export async function seedPostgresDemoData() {
       ${sqlString(uuid())}, ${sqlString(ids.tenantId)}, ${sqlString(ids.userId)}, 'active', 'admin', now(), now(), now()
     )
     ON CONFLICT DO NOTHING;
+
+    INSERT INTO synqora_core.user_auth_identity (
+      auth_identity_id, user_id, provider, provider_subject, password_hash, password_salt,
+      password_algorithm, password_iterations, status, created_at, updated_at
+    ) VALUES (
+      ${sqlString(uuid())}, ${sqlString(ids.userId)}, 'local', ${sqlString(DEMO_LOGIN_EMAIL)},
+      ${sqlString(demoPassword.passwordHash)}, ${sqlString(demoPassword.salt)},
+      ${sqlString(demoPassword.algorithm)}, ${demoPassword.iterations}, 'active', now(), now()
+    )
+    ON CONFLICT (provider, provider_subject) DO UPDATE
+    SET password_hash = EXCLUDED.password_hash,
+        password_salt = EXCLUDED.password_salt,
+        password_algorithm = EXCLUDED.password_algorithm,
+        password_iterations = EXCLUDED.password_iterations,
+        status = 'active',
+        updated_at = now();
 
     INSERT INTO synqora_core.migration_project (
       project_id, tenant_id, project_code, name, description, status, source_engine, target_engine,

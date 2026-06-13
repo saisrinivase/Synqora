@@ -178,6 +178,25 @@ const server = http.createServer(async (request, response) => {
       return sendSession(response, context);
     }
 
+    if (request.method === 'POST' && url.pathname === '/api/v1/auth/signup') {
+      const body = await readJsonBody(request);
+      const context = await store.createUserAccount({
+        email: body.email,
+        password: body.password,
+        displayName: body.displayName,
+        organizationName: body.organizationName
+      });
+      const sessionToken = createToken('synqora_session');
+      sessions.set(sessionToken, {
+        context,
+        createdAt: Date.now(),
+        lastSeenAt: Date.now(),
+        expiresAt: Date.now() + SESSION_TTL_MS
+      });
+      response.setHeader('Set-Cookie', buildSessionCookie(sessionToken, Math.floor(SESSION_TTL_MS / 1000)));
+      return sendSession(response, context);
+    }
+
     if (request.method === 'POST' && url.pathname === '/api/v1/auth/logout') {
       const token = parseCookies(request)[SESSION_COOKIE_NAME];
       if (token) {
@@ -196,25 +215,25 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (request.method === 'GET' && url.pathname === '/api/v1/dashboard') {
-      return sendJson(response, 200, await store.getDashboard());
+      return sendJson(response, 200, await store.getDashboard(request.synqoraUser));
     }
 
     if (request.method === 'GET' && url.pathname === '/api/v1/projects') {
-      return sendJson(response, 200, { projects: await store.listProjects() });
+      return sendJson(response, 200, { projects: await store.listProjects(request.synqoraUser) });
     }
 
     const projectOverviewMatch = url.pathname.match(/^\/api\/v1\/projects\/([^/]+)\/overview$/);
     if (request.method === 'GET' && projectOverviewMatch) {
       const [, projectId] = projectOverviewMatch;
-      return sendJson(response, 200, await store.getProjectOverview(projectId));
+      return sendJson(response, 200, await store.getProjectOverview(projectId, request.synqoraUser));
     }
 
     if (request.method === 'GET' && url.pathname === '/api/v1/agents') {
-      return sendJson(response, 200, { agents: await store.listAgents() });
+      return sendJson(response, 200, { agents: await store.listAgents(request.synqoraUser) });
     }
 
     if (request.method === 'GET' && url.pathname === '/api/v1/jobs') {
-      return sendJson(response, 200, { jobs: await store.listJobs() });
+      return sendJson(response, 200, { jobs: await store.listJobs(request.synqoraUser) });
     }
 
     if (request.method === 'POST' && url.pathname === '/api/v1/agent/register') {

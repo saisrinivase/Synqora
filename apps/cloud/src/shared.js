@@ -36,8 +36,39 @@ export function hashValue(value) {
   return crypto.createHash('sha256').update(value).digest('hex');
 }
 
+export function createPasswordRecord(password) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const passwordHash = crypto.pbkdf2Sync(String(password), salt, 120000, 32, 'sha256').toString('hex');
+  return {
+    passwordHash,
+    salt,
+    algorithm: 'pbkdf2_sha256',
+    iterations: 120000
+  };
+}
+
+export function verifyPassword(password, record) {
+  if (!password || !record?.passwordHash || !record?.salt) {
+    return false;
+  }
+
+  const iterations = Number(record.iterations || 120000);
+  const candidate = crypto.pbkdf2Sync(String(password), record.salt, iterations, 32, 'sha256').toString('hex');
+  return crypto.timingSafeEqual(Buffer.from(candidate, 'hex'), Buffer.from(record.passwordHash, 'hex'));
+}
+
 export function createToken(prefix) {
   return `${prefix}_${crypto.randomBytes(18).toString('hex')}`;
+}
+
+export function slugifyTenantName(value) {
+  const slug = String(value || 'organization')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 48);
+  return slug || 'organization';
 }
 
 export function deepClone(value) {

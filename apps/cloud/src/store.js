@@ -7,11 +7,14 @@ import {
   DEFAULT_CAPABILITIES,
   buildProjectOverviewPayload,
   capabilityForJob,
+  createPasswordRecord,
   createToken,
   deepClone,
   hashValue,
   nowIso,
-  priorityRank
+  priorityRank,
+  slugifyTenantName,
+  verifyPassword
 } from './shared.js';
 
 export class SynqoraStore {
@@ -35,6 +38,7 @@ export class SynqoraStore {
     const job1Id = crypto.randomUUID();
     const job2Id = crypto.randomUUID();
     const job3Id = crypto.randomUUID();
+    const demoPassword = createPasswordRecord(DEMO_LOGIN_PASSWORD);
 
     return {
       tenant: {
@@ -188,6 +192,21 @@ export class SynqoraStore {
           updatedAt: seededAt
         }
       ],
+      authIdentities: [
+        {
+          authIdentityId: crypto.randomUUID(),
+          userId,
+          provider: 'local',
+          providerSubject: DEMO_LOGIN_EMAIL,
+          passwordHash: demoPassword.passwordHash,
+          passwordSalt: demoPassword.salt,
+          passwordAlgorithm: demoPassword.algorithm,
+          passwordIterations: demoPassword.iterations,
+          status: 'active',
+          createdAt: seededAt,
+          updatedAt: seededAt
+        }
+      ],
       workflows: [
         {
           workflowRunId,
@@ -290,13 +309,17 @@ export class SynqoraStore {
     };
   }
 
-  getDashboard() {
-    const activeProjects = this.state.projects.filter((project) => project.status !== 'archived');
-    const queuedJobs = this.state.jobs.filter((job) => job.status === 'queued').length;
-    const runningJobs = this.state.jobs.filter((job) => job.status === 'running').length;
+  getDashboard(context = null) {
+    const tenant = this.#tenantForContext(context);
+    const activeProjects = this.state.projects.filter(
+      (project) => project.tenantId === tenant.tenantId && project.status !== 'archived'
+    );
+    const tenantJobs = this.state.jobs.filter((job) => job.tenantId === tenant.tenantId);
+    const queuedJobs = tenantJobs.filter((job) => job.status === 'queued').length;
+    const runningJobs = tenantJobs.filter((job) => job.status === 'running').length;
 
     return {
-      tenant: deepClone(this.state.tenant),
+      tenant: deepClone(tenant),
       summary: {
         activeProjects: activeProjects.length,
         discoveredObjects: activeProjects.reduce((sum, project) => sum + (project.discoveredObjects ?? 0), 0),
@@ -307,32 +330,48 @@ export class SynqoraStore {
         dataMigratedTb: Number(
           activeProjects.reduce((sum, project) => sum + (project.dataMigratedTb ?? 0), 0).toFixed(1)
         ),
-        registeredAgents: this.state.agentInstances.filter((agent) => agent.status !== 'retired').length,
+        registeredAgents: this.state.agentInstances.filter(
+          (agent) => agent.tenantId === tenant.tenantId && agent.status !== 'retired'
+        ).length,
         queuedJobs,
         runningJobs
       },
-      projects: deepClone(this.state.projects),
-      jobs: deepClone(this.state.jobs)
+      projects: deepClone(activeProjects),
+      jobs: deepClone(tenantJobs)
     };
   }
 
-  listProjects() {
-    return deepClone(this.state.projects);
+  listProjects(context = null) {
+    const tenant = this.#tenantForContext(context);
+    return deepClone(this.state.projects.filter((project) => project.tenantId === tenant.tenantId));
   }
 
-  listAgents() {
-    return deepClone(this.state.agentInstances);
+  listAgents(context = null) {
+    const tenant = this.#tenantForContext(context);
+    return deepClone(this.state.agentInstances.filter((agent) => agent.tenantId === tenant.tenantId));
   }
 
-  listJobs() {
-    return deepClone(this.state.jobs);
+  listJobs(context = null) {
+    const tenant = this.#tenantForContext(context);
+    return deepClone(this.state.jobs.filter((job) => job.tenantId === tenant.tenantId));
   }
 
   authenticateUser({ email, password }) {
     const normalizedEmail = String(email || '').trim().toLowerCase();
     const user = this.state.users.find((item) => item.email.toLowerCase() === normalizedEmail && item.status === 'active');
+    const identity = this.state.authIdentities.find(
+      (item) => item.provider === 'local' && item.providerSubject === normalizedEmail && item.status === 'active'
+    );
 
-    if (!user || normalizedEmail !== DEMO_LOGIN_EMAIL || password !== DEMO_LOGIN_PASSWORD) {
+    if (
+      !user ||
+      !identity ||
+      !verifyPassword(password, {
+        passwordHash: identity.passwordHash,
+        salt: identity.passwordSalt,
+        iterations: identity.passwordIterations
+      })
+    ) {
       throw new Error('Invalid email or password');
     }
 
@@ -340,16 +379,106 @@ export class SynqoraStore {
     const membership = this.state.tenantUsers.find(
       (item) => item.userId === user.userId && item.membershipStatus === 'active'
     );
+    const tenant =
+      membership?.tenantId === this.state.tenant.tenantId
+        ? this.state.tenant
+        : (this.state.tenants || []).find((item) => item.tenantId === membership?.tenantId);
 
     return deepClone({
       user,
-      tenant: this.state.tenant,
+      tenant: tenant || this.state.tenant,
       role: membership?.defaultRole || 'admin'
     });
   }
 
-  getProjectOverview(projectId) {
+  createUserAccount({ email, password, displayName, organizationName }) {
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+    const finalDisplayName = String(displayName || normalizedEmail.split('@')[0] || 'Synqora User').trim();
+    const finalOrganizationName = String(organizationName || `${finalDisplayName}'s Organization`).trim();
+
+    if (!normalizedEmail || !password || password.length < 8) {
+      throw new Error('A valid email and password with at least 8 characters are required');
+    }
+    if (this.state.users.some((user) => user.email.toLowerCase() === normalizedEmail)) {
+      throw new Error('An account with this email already exists');
+    }
+
+    const timestamp = nowIso();
+    const tenantId = crypto.randomUUID();
+    const userId = crypto.randomUUID();
+    const passwordRecord = createPasswordRecord(password);
+    const baseSlug = slugifyTenantName(finalOrganizationName);
+    const existingSlugs = new Set([this.state.tenant, ...(this.state.tenants || [])].filter(Boolean).map((tenant) => tenant.slug));
+    let slug = baseSlug;
+    let suffix = 2;
+    while (existingSlugs.has(slug)) {
+      slug = `${baseSlug}-${suffix}`;
+      suffix += 1;
+    }
+
+    const tenant = {
+      tenantId,
+      name: finalOrganizationName,
+      slug,
+      status: 'active',
+      deploymentTier: 'saas_trial',
+      regionHome: 'us-east-1',
+      createdAt: timestamp,
+      updatedAt: timestamp
+    };
+    const user = {
+      userId,
+      email: normalizedEmail,
+      displayName: finalDisplayName,
+      status: 'active',
+      authProvider: 'local',
+      authSubject: normalizedEmail,
+      lastLoginAt: timestamp,
+      createdAt: timestamp,
+      updatedAt: timestamp
+    };
+    const membership = {
+      tenantUserId: crypto.randomUUID(),
+      tenantId,
+      userId,
+      membershipStatus: 'active',
+      defaultRole: 'owner',
+      joinedAt: timestamp,
+      createdAt: timestamp,
+      updatedAt: timestamp
+    };
+
+    this.state.tenants = this.state.tenants || [];
+    this.state.tenants.push(tenant);
+    this.state.users.push(user);
+    this.state.tenantUsers.push(membership);
+    this.state.authIdentities.push({
+      authIdentityId: crypto.randomUUID(),
+      userId,
+      provider: 'local',
+      providerSubject: normalizedEmail,
+      passwordHash: passwordRecord.passwordHash,
+      passwordSalt: passwordRecord.salt,
+      passwordAlgorithm: passwordRecord.algorithm,
+      passwordIterations: passwordRecord.iterations,
+      status: 'active',
+      createdAt: timestamp,
+      updatedAt: timestamp
+    });
+
+    return deepClone({
+      user,
+      tenant,
+      role: membership.defaultRole
+    });
+  }
+
+  getProjectOverview(projectId, context = null) {
+    const tenant = this.#tenantForContext(context);
     const project = this.state.projects.find((item) => item.projectId === projectId);
+    if (project && project.tenantId !== tenant.tenantId) {
+      throw new Error('Project not found');
+    }
 
     return deepClone(
       buildProjectOverviewPayload({
@@ -632,6 +761,19 @@ export class SynqoraStore {
       throw new Error(`Unknown agent: ${agentId}`);
     }
     return agent;
+  }
+
+  #tenantForContext(context) {
+    const tenantId = context?.tenant?.tenantId || this.state.tenant.tenantId;
+    const tenant =
+      this.state.tenant.tenantId === tenantId
+        ? this.state.tenant
+        : (this.state.tenants || []).find((item) => item.tenantId === tenantId);
+
+    if (!tenant) {
+      throw new Error('Tenant not found');
+    }
+    return tenant;
   }
 
   #findJob(jobRunId) {

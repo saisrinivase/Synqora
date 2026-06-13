@@ -126,11 +126,92 @@ body.authenticated .main-content { display: flex; }
   line-height: 1.6;
   margin-bottom: 22px;
 }
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  background: rgba(255,255,255,0.045);
+  border: 1px solid var(--border-subtle);
+  margin-bottom: 14px;
+}
+.auth-tab {
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 9px 10px;
+  transition: all var(--transition);
+}
+.auth-tab.active {
+  color: white;
+  background: var(--gradient-primary);
+  box-shadow: 0 6px 20px rgba(124,58,237,0.25);
+}
+.social-auth-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.social-auth-btn {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: rgba(255,255,255,0.045);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 0.76rem;
+  font-weight: 600;
+  transition: all var(--transition);
+}
+.social-auth-btn:hover { border-color: var(--border-accent); background: rgba(255,255,255,0.075); transform: translateY(-1px); }
+.social-auth-btn span {
+  min-width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.08);
+  color: var(--accent-cyan);
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+.social-auth-btn.wide { grid-column: span 2; }
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  margin-bottom: 14px;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  height: 1px;
+  flex: 1;
+  background: var(--border-subtle);
+}
 .login-form {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
+.signup-form { display: none; }
+.login-card.signup-mode #loginForm { display: none; }
+.login-card.signup-mode #signupForm { display: flex; }
 .login-form label {
   display: flex;
   flex-direction: column;
@@ -155,6 +236,13 @@ body.authenticated .main-content { display: flex; }
   min-height: 18px;
   color: var(--accent-red);
   font-size: 0.76rem;
+}
+.provider-message {
+  min-height: 18px;
+  color: var(--accent-amber);
+  font-size: 0.74rem;
+  line-height: 1.4;
+  margin-top: 4px;
 }
 .login-demo {
   display: flex;

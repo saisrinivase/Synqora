@@ -29,6 +29,25 @@
         </div>
       </div>
       <p class="login-copy">Enterprise SaaS access for Oracle to PostgreSQL assessment, conversion, CDC, validation, and governed cutover.</p>
+      <div class="auth-tabs">
+        <button class="auth-tab active" type="button" data-auth-mode="signin">Sign In</button>
+        <button class="auth-tab" type="button" data-auth-mode="signup">Create Account</button>
+      </div>
+      <div class="social-auth-grid">
+        <button class="social-auth-btn" type="button" data-auth-provider="google">
+          <span>G</span>
+          Continue with Google
+        </button>
+        <button class="social-auth-btn" type="button" data-auth-provider="github">
+          <span>GH</span>
+          Continue with GitHub
+        </button>
+        <button class="social-auth-btn wide" type="button" data-auth-provider="sso">
+          <span>SSO</span>
+          Continue with Company SSO
+        </button>
+      </div>
+      <div class="auth-divider"><span>or use email</span></div>
       <form class="login-form" id="loginForm">
         <label>
           <span>Email</span>
@@ -41,6 +60,27 @@
         <button class="btn btn-primary login-submit" type="submit">Sign In</button>
         <div class="login-error" id="loginError" role="alert"></div>
       </form>
+      <form class="login-form signup-form" id="signupForm">
+        <label>
+          <span>Work Email</span>
+          <input type="email" id="signupEmail" autocomplete="email" placeholder="you@company.com" required>
+        </label>
+        <label>
+          <span>Full Name</span>
+          <input type="text" id="signupDisplayName" autocomplete="name" placeholder="Migration Lead" required>
+        </label>
+        <label>
+          <span>Organization</span>
+          <input type="text" id="signupOrganization" autocomplete="organization" placeholder="Acme Finance" required>
+        </label>
+        <label>
+          <span>Password</span>
+          <input type="password" id="signupPassword" autocomplete="new-password" placeholder="At least 8 characters" required>
+        </label>
+        <button class="btn btn-primary login-submit" type="submit">Create Account</button>
+        <div class="login-error" id="signupError" role="alert"></div>
+      </form>
+      <div class="provider-message" id="providerMessage"></div>
       <div class="login-demo">
         <strong>Local demo account</strong>
         <span id="demoLoginHint">Loading demo credentials...</span>

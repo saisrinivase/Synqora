@@ -55,11 +55,29 @@ async function initAuthSession() {
 }
 
 function initAuthHandlers() {
+  const authTabs = document.querySelectorAll('.auth-tab[data-auth-mode]');
+  authTabs.forEach((tab) => {
+    tab.addEventListener('click', () => setAuthMode(tab.dataset.authMode || 'signin'));
+  });
+
+  const providerButtons = document.querySelectorAll('[data-auth-provider]');
+  providerButtons.forEach((button) => {
+    button.addEventListener('click', () => showProviderMessage(button.dataset.authProvider));
+  });
+
   const loginForm = document.getElementById('loginForm');
   if (loginForm) {
     loginForm.addEventListener('submit', async (event) => {
       event.preventDefault();
       await submitLogin();
+    });
+  }
+
+  const signupForm = document.getElementById('signupForm');
+  if (signupForm) {
+    signupForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      await submitSignup();
     });
   }
 
@@ -76,6 +94,37 @@ function initAuthHandlers() {
       appState.selectedProjectOverview = null;
       setLoggedOutView();
     });
+  }
+}
+
+function setAuthMode(mode) {
+  const loginCard = document.querySelector('.login-card');
+  const providerMessage = document.getElementById('providerMessage');
+  const loginError = document.getElementById('loginError');
+  const signupError = document.getElementById('signupError');
+
+  document.querySelectorAll('.auth-tab[data-auth-mode]').forEach((tab) => {
+    tab.classList.toggle('active', tab.dataset.authMode === mode);
+  });
+
+  if (loginCard) {
+    loginCard.classList.toggle('signup-mode', mode === 'signup');
+  }
+  if (providerMessage) providerMessage.textContent = '';
+  if (loginError) loginError.textContent = '';
+  if (signupError) signupError.textContent = '';
+}
+
+function showProviderMessage(provider) {
+  const providerMessage = document.getElementById('providerMessage');
+  const providerLabel = {
+    google: 'Google Workspace',
+    github: 'GitHub',
+    sso: 'Company SSO / OIDC'
+  }[provider] || 'identity provider';
+
+  if (providerMessage) {
+    providerMessage.textContent = `${providerLabel} login is part of the enterprise auth surface. Configure OAuth/OIDC/SAML provider settings for production; use email signup in this local prototype.`;
   }
 }
 
@@ -108,6 +157,44 @@ async function submitLogin() {
     await initDashboardApi();
   } catch (error) {
     if (errorEl) errorEl.textContent = error.message || 'Unable to sign in';
+  } finally {
+    if (submitBtn) submitBtn.disabled = false;
+  }
+}
+
+async function submitSignup() {
+  const emailEl = document.getElementById('signupEmail');
+  const displayNameEl = document.getElementById('signupDisplayName');
+  const organizationEl = document.getElementById('signupOrganization');
+  const passwordEl = document.getElementById('signupPassword');
+  const errorEl = document.getElementById('signupError');
+  const submitBtn = document.querySelector('#signupForm button[type="submit"]');
+
+  if (errorEl) errorEl.textContent = '';
+  if (submitBtn) submitBtn.disabled = true;
+
+  try {
+    const response = await fetch('/api/v1/auth/signup', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: emailEl?.value,
+        displayName: displayNameEl?.value,
+        organizationName: organizationEl?.value,
+        password: passwordEl?.value
+      })
+    });
+
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload.error || 'Unable to create account');
+    }
+
+    setAuthenticatedSession(payload);
+    await initDashboardApi();
+  } catch (error) {
+    if (errorEl) errorEl.textContent = error.message || 'Unable to create account';
   } finally {
     if (submitBtn) submitBtn.disabled = false;
   }
