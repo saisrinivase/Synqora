@@ -1,0 +1,21 @@
+{
+  "name": "synqora",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Synqora V1 scaffold: cloud control plane, agent CLI, and migration UI prototype",
+  "scripts": {
+    "start:cloud": "node apps/cloud/src/server.js",
+    "start:cloud:pg": "SYNQORA_STORAGE=postgres node apps/cloud/src/server.js",
+    "start:agent": "node apps/agent/src/cli.js",
+    "agent:register": "node apps/agent/src/cli.js register",
+    "agent:status": "node apps/agent/src/cli.js status",
+    "agent:heartbeat": "node apps/agent/src/cli.js heartbeat",
+    "agent:poll": "node apps/agent/src/cli.js poll",
+    "agent:run-once": "node apps/agent/src/cli.js run-once",
+    "db:migrate": "node db/run-migrations.js",
+    "db:seed": "node db/seed-demo.js",
+    "db:setup": "npm run db:migrate && npm run db:seed",
+    "test": "node --test"
+  }
+}

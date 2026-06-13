@@ -1,0 +1,1635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Synqora — Migration Operating System</title>
+  <meta name="description" content="Synqora: End-to-end Oracle to PostgreSQL migration automation platform">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="auth-pending">
+  <section class="login-shell" id="loginShell" aria-label="Synqora sign in">
+    <div class="login-ambient"></div>
+    <div class="login-card">
+      <div class="login-brand">
+        <div class="logo-icon">
+          <svg viewBox="0 0 32 32" fill="none">
+            <rect width="32" height="32" rx="8" fill="url(#loginLogoGrad)"/>
+            <path d="M8 16L14 10L20 16L14 22Z" fill="white" opacity="0.9"/>
+            <path d="M14 16L20 10L26 16L20 22Z" fill="white" opacity="0.6"/>
+            <defs><linearGradient id="loginLogoGrad" x1="0" y1="0" x2="32" y2="32"><stop stop-color="#7c3aed"/><stop offset="1" stop-color="#06b6d4"/></linearGradient></defs>
+          </svg>
+        </div>
+        <div>
+          <span class="login-kicker">Synqora Cloud</span>
+          <h1>Sign in to your migration command center</h1>
+        </div>
+      </div>
+      <p class="login-copy">Enterprise SaaS access for Oracle to PostgreSQL assessment, conversion, CDC, validation, and governed cutover.</p>
+      <form class="login-form" id="loginForm">
+        <label>
+          <span>Email</span>
+          <input type="email" id="loginEmail" autocomplete="username" required>
+        </label>
+        <label>
+          <span>Password</span>
+          <input type="password" id="loginPassword" autocomplete="current-password" required>
+        </label>
+        <button class="btn btn-primary login-submit" type="submit">Sign In</button>
+        <div class="login-error" id="loginError" role="alert"></div>
+      </form>
+      <div class="login-demo">
+        <strong>Local demo account</strong>
+        <span id="demoLoginHint">Loading demo credentials...</span>
+      </div>
+      <div class="login-guardrails">
+        <span>No raw database passwords in SaaS</span>
+        <span>Tenant-scoped projects</span>
+        <span>Agent-side connectivity</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 32 32" fill="none">
+          <rect width="32" height="32" rx="8" fill="url(#logoGrad)"/>
+          <path d="M8 16L14 10L20 16L14 22Z" fill="white" opacity="0.9"/>
+          <path d="M14 16L20 10L26 16L20 22Z" fill="white" opacity="0.6"/>
+          <defs><linearGradient id="logoGrad" x1="0" y1="0" x2="32" y2="32"><stop stop-color="#7c3aed"/><stop offset="1" stop-color="#06b6d4"/></linearGradient></defs>
+        </svg>
+      </div>
+      <span class="logo-text">Synqora</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Overview</div>
+      <a href="#" class="nav-item active" data-view="dashboard">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 6a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zm10 0a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg>
+        <span>Dashboard</span>
+      </a>
+      <a href="#" class="nav-item" data-view="project">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/></svg>
+        <span>Project Pipeline</span>
+      </a>
+
+      <div class="nav-section-label">Migration</div>
+      <a href="#" class="nav-item" data-view="assessment">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm2 10a1 1 0 10-2 0v3a1 1 0 102 0v-3zm2-3a1 1 0 011 1v5a1 1 0 11-2 0v-5a1 1 0 011-1zm4-1a1 1 0 10-2 0v7a1 1 0 102 0V8z" clip-rule="evenodd"/></svg>
+        <span>Assessment</span>
+      </a>
+      <a href="#" class="nav-item" data-view="converter">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+        <span>Schema Converter</span>
+      </a>
+      <a href="#" class="nav-item" data-view="dataload">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M3 12v3c0 1.657 3.134 3 7 3s7-1.343 7-3v-3c0 1.657-3.134 3-7 3s-7-1.343-7-3z"/><path d="M3 7v3c0 1.657 3.134 3 7 3s7-1.343 7-3V7c0 1.657-3.134 3-7 3S3 8.657 3 7z"/><path d="M17 5c0 1.657-3.134 3-7 3S3 6.657 3 5s3.134-3 7-3 7 1.343 7 3z"/></svg>
+        <span>Data Load</span>
+      </a>
+      <a href="#" class="nav-item" data-view="cdc">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/></svg>
+        <span>CDC / Replication</span>
+      </a>
+
+      <div class="nav-section-label">Operations</div>
+      <a href="#" class="nav-item" data-view="validation">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+        <span>Validation</span>
+      </a>
+      <a href="#" class="nav-item" data-view="cutover">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/></svg>
+        <span>Cutover Control</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-env">
+        <div class="env-dot"></div>
+        <span id="tenantNameLabel">Production</span>
+      </div>
+      <div class="sidebar-user">
+        <div class="user-avatar" id="sidebarUserAvatar">SE</div>
+        <div class="user-info">
+          <span class="user-name" id="sidebarUserName">Sai Endla</span>
+          <span class="user-role" id="sidebarUserRole">Admin</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content" id="mainContent">
+    <!-- Top Bar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="topbar-btn" id="sidebarToggle">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
+        </button>
+        <div class="breadcrumb" id="breadcrumb">
+          <span class="breadcrumb-item">Synqora</span>
+          <span class="breadcrumb-sep">›</span>
+          <span class="breadcrumb-item active" id="breadcrumbPage">Dashboard</span>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="search-box">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+          <input type="text" placeholder="Search objects, tables, issues..." id="searchInput">
+          <kbd>⌘K</kbd>
+        </div>
+        <button class="topbar-btn notification-btn">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zm0 16a3 3 0 01-3-3h6a3 3 0 01-3 3z"/></svg>
+          <span class="notification-badge">3</span>
+        </button>
+        <button class="topbar-btn" id="logoutBtn" title="Sign out">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20"><path fill-rule="evenodd" d="M3 4a2 2 0 012-2h5a1 1 0 010 2H5v12h5a1 1 0 110 2H5a2 2 0 01-2-2V4zm10.293 2.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L14.586 11H9a1 1 0 110-2h5.586l-1.293-1.293a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- ===================== DASHBOARD VIEW ===================== -->
+    <section class="view active" id="view-dashboard">
+      <div class="view-header">
+        <div>
+          <h1>Migration Portfolio</h1>
+          <p class="view-subtitle">Overview of all active migration projects</p>
+        </div>
+        <button class="btn btn-primary" id="newProjectBtn" data-open-modal="new-project">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+          New Project
+        </button>
+      </div>
+
+      <!-- Stats Row -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon" style="--accent: #7c3aed">
+            <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/></svg>
+          </div>
+          <div class="stat-info">
+            <span class="stat-value" id="activeProjectsStat" data-count="12">0</span>
+            <span class="stat-label">Active Projects</span>
+          </div>
+          <span class="stat-trend up">+3 this month</span>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="--accent: #06b6d4">
+            <svg viewBox="0 0 20 20" fill="currentColor"><path d="M3 12v3c0 1.657 3.134 3 7 3s7-1.343 7-3v-3c0 1.657-3.134 3-7 3s-7-1.343-7-3z"/><path d="M3 7v3c0 1.657 3.134 3 7 3s7-1.343 7-3V7c0 1.657-3.134 3-7 3S3 8.657 3 7z"/><path d="M17 5c0 1.657-3.134 3-7 3S3 6.657 3 5s3.134-3 7-3 7 1.343 7 3z"/></svg>
+          </div>
+          <div class="stat-info">
+            <span class="stat-value" id="objectsDiscoveredStat" data-count="48723">0</span>
+            <span class="stat-label">Objects Discovered</span>
+          </div>
+          <span class="stat-trend up">+12,401 new</span>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="--accent: #10b981">
+            <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+          </div>
+          <div class="stat-info">
+            <span class="stat-value" id="conversionRateStat" data-count="94">0</span>
+            <span class="stat-label">Conversion Rate %</span>
+          </div>
+          <span class="stat-trend up">+2.3% vs last week</span>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="--accent: #f59e0b">
+            <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+          </div>
+          <div class="stat-info">
+            <span class="stat-value"><span id="dataMigratedWholeStat" data-count="2">0</span>.<span id="dataMigratedFractionStat" data-count="4">0</span> TB</span>
+            <span class="stat-label">Data Migrated</span>
+          </div>
+          <span class="stat-trend up">847 GB this week</span>
+        </div>
+      </div>
+
+      <div class="connection-onboarding glass-card">
+        <div class="connection-onboarding-header">
+          <div>
+            <h3>Connection-First Onboarding</h3>
+            <p class="table-note">Before discovery starts, Synqora should register the Oracle source, validate the PostgreSQL target, and prove the agent can reach both endpoints.</p>
+          </div>
+          <button class="btn btn-primary" data-open-modal="new-project">Connect Source &amp; Target</button>
+        </div>
+        <div class="connection-onboarding-grid">
+          <div class="connection-panel">
+            <div class="connection-panel-title">
+              <span class="project-badge oracle">Source</span>
+              <strong>Oracle Source</strong>
+            </div>
+            <div class="connection-chip-list">
+              <span class="status-badge running">Host / Port</span>
+              <span class="status-badge pending">Service / SID</span>
+              <span class="status-badge pending">Read Privileges</span>
+            </div>
+            <ul class="connection-checklist">
+              <li>Register Oracle endpoint and schema scope</li>
+              <li>Test network reachability from the Synqora agent</li>
+              <li>Validate discovery, metadata, and CDC prerequisites</li>
+            </ul>
+          </div>
+          <div class="connection-panel">
+            <div class="connection-panel-title">
+              <span class="project-badge pg">Runtime</span>
+              <strong>Synqora Agent Plane</strong>
+            </div>
+            <div class="connection-chip-list">
+              <span class="status-badge completed">Customer Network</span>
+              <span class="status-badge pending">Credential Vault</span>
+              <span class="status-badge pending">Policy Check</span>
+            </div>
+            <ul class="connection-checklist">
+              <li>Deploy the agent near source and target systems</li>
+              <li>Keep database credentials in the customer-managed plane</li>
+              <li>Return only health, evidence, and execution status to SaaS</li>
+            </ul>
+          </div>
+          <div class="connection-panel">
+            <div class="connection-panel-title">
+              <span class="project-badge pg">Target</span>
+              <strong>PostgreSQL Target</strong>
+            </div>
+            <div class="connection-chip-list">
+              <span class="status-badge running">DB / Schema</span>
+              <span class="status-badge pending">DDL Rights</span>
+              <span class="status-badge pending">Extension Policy</span>
+            </div>
+            <ul class="connection-checklist">
+              <li>Register PostgreSQL endpoint, database, and target schema</li>
+              <li>Validate bootstrap rights, storage, and connectivity</li>
+              <li>Capture target capabilities before conversion and load</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Project Cards -->
+      <div class="section-header">
+        <h2>Active Migrations</h2>
+        <div class="filter-group">
+          <button class="filter-btn active" data-project-filter="all">All</button>
+          <button class="filter-btn" data-project-filter="in_progress">In Progress</button>
+          <button class="filter-btn" data-project-filter="assessment">Assessment</button>
+          <button class="filter-btn" data-project-filter="cutover_ready">Cutover Ready</button>
+        </div>
+      </div>
+
+      <div class="project-grid" id="projectGrid">
+        <!-- Project 1 -->
+        <div class="project-card" data-status="in-progress">
+          <div class="project-card-header">
+            <div class="project-badge oracle">Oracle 19c</div>
+            <div class="project-badge pg">PostgreSQL 16</div>
+            <span class="project-mode">Migration + CDC</span>
+          </div>
+          <h3 class="project-name">ERP Core — FINPROD</h3>
+          <p class="project-desc">Financial production database migration, 847 tables, 312 packages</p>
+          <div class="project-metrics">
+            <div class="metric">
+              <span class="metric-label">Schema</span>
+              <div class="progress-bar"><div class="progress-fill" style="width: 100%; --bar-color: #10b981"></div></div>
+              <span class="metric-value">100%</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Data Load</span>
+              <div class="progress-bar"><div class="progress-fill" style="width: 73%; --bar-color: #06b6d4"></div></div>
+              <span class="metric-value">73%</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Validation</span>
+              <div class="progress-bar"><div class="progress-fill" style="width: 45%; --bar-color: #7c3aed"></div></div>
+              <span class="metric-value">45%</span>
+            </div>
+          </div>
+          <div class="project-footer">
+            <div class="project-issues">
+              <span class="issue-dot critical"></span> 3 Critical
+              <span class="issue-dot warning"></span> 14 Warnings
+            </div>
+            <span class="project-updated">Updated 12m ago</span>
+          </div>
+        </div>
+
+        <!-- Project 2 -->
+        <div class="project-card" data-status="assessment">
+          <div class="project-card-header">
+            <div class="project-badge oracle">Oracle 12c</div>
+            <div class="project-badge pg">Aurora PG 15</div>
+            <span class="project-mode">Assessment Only</span>
+          </div>
+          <h3 class="project-name">HR System — HRPROD</h3>
+          <p class="project-desc">Human resources database, 234 tables, 89 procedures</p>
+          <div class="project-metrics">
+            <div class="metric">
+              <span class="metric-label">Discovery</span>
+              <div class="progress-bar"><div class="progress-fill" style="width: 100%; --bar-color: #10b981"></div></div>
+              <span class="metric-value">100%</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Assessment</span>
+              <div class="progress-bar"><div class="progress-fill" style="width: 62%; --bar-color: #f59e0b"></div></div>
+              <span class="metric-value">62%</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Risk Score</span>
+              <div class="progress-bar"><div class="progress-fill" style="width: 38%; --bar-color: #ef4444"></div></div>
+              <span class="metric-value">Medium</span>
+            </div>
+          </div>
+          <div class="project-footer">
+            <div class="project-issues">
+              <span class="issue-dot critical"></span> 7 Critical
+              <span class="issue-dot warning"></span> 31 Warnings
+            </div>
+            <span class="project-updated">Updated 1h ago</span>
+          </div>
+        </div>
+
+        <!-- Project 3 -->
+        <div class="project-card" data-status="cutover">
+          <div class="project-card-header">
+            <div class="project-badge oracle">Oracle 19c</div>
+            <div class="project-badge pg">Cloud SQL PG 16</div>
+            <span class="project-mode">Migration Factory</span>
+          </div>
+          <h3 class="project-name">Inventory — INVPROD</h3>
+          <p class="project-desc">Inventory management, 156 tables, 45 views, 23 packages</p>
+          <div class="project-metrics">
+            <div class="metric">
+              <span class="metric-label">Schema</span>
+              <div class="progress-bar"><div class="progress-fill" style="width: 100%; --bar-color: #10b981"></div></div>
+              <span class="metric-value">100%</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Data Load</span>
+              <div class="progress-bar"><div class="progress-fill" style="width: 100%; --bar-color: #10b981"></div></div>
+              <span class="metric-value">100%</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Validation</span>
+              <div class="progress-bar"><div class="progress-fill" style="width: 98%; --bar-color: #10b981"></div></div>
+              <span class="metric-value">98%</span>
+            </div>
+          </div>
+          <div class="project-footer">
+            <div class="project-issues">
+              <span class="issue-dot success"></span> 0 Critical
+              <span class="issue-dot warning"></span> 2 Warnings
+            </div>
+            <span class="project-updated cutover-ready">Cutover Ready</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activity & Risk -->
+      <div class="dashboard-bottom">
+        <div class="activity-feed glass-card">
+          <h3>Recent Activity</h3>
+          <div class="activity-list">
+            <div class="activity-item">
+              <div class="activity-icon green"><svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg></div>
+              <div class="activity-content">
+                <span class="activity-text"><strong>FINPROD</strong> — Schema deployment phase 3 completed</span>
+                <span class="activity-time">12 minutes ago</span>
+              </div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-icon blue"><svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path d="M3 12v3c0 1.657 3.134 3 7 3s7-1.343 7-3v-3c0 1.657-3.134 3-7 3s-7-1.343-7-3z"/><path d="M3 7v3c0 1.657 3.134 3 7 3s7-1.343 7-3V7c0 1.657-3.134 3-7 3S3 8.657 3 7z"/></svg></div>
+              <div class="activity-content">
+                <span class="activity-text"><strong>FINPROD</strong> — Bulk load chunk 847/1200 completed</span>
+                <span class="activity-time">23 minutes ago</span>
+              </div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-icon amber"><svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg></div>
+              <div class="activity-content">
+                <span class="activity-text"><strong>HRPROD</strong> — 7 new critical issues found in assessment</span>
+                <span class="activity-time">1 hour ago</span>
+              </div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-icon purple"><svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633z" clip-rule="evenodd"/></svg></div>
+              <div class="activity-content">
+                <span class="activity-text"><strong>INVPROD</strong> — 23 PL/SQL packages auto-converted</span>
+                <span class="activity-time">2 hours ago</span>
+              </div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-icon green"><svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/></svg></div>
+              <div class="activity-content">
+                <span class="activity-text"><strong>INVPROD</strong> — All cutover gates passed ✓</span>
+                <span class="activity-time">3 hours ago</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="risk-heatmap glass-card">
+          <h3>Risk Heatmap</h3>
+          <div class="heatmap-grid">
+            <div class="heatmap-row">
+              <span class="heatmap-label">Schema</span>
+              <div class="heatmap-cells">
+                <div class="heatmap-cell low" title="FINPROD: Low">L</div>
+                <div class="heatmap-cell high" title="HRPROD: High">H</div>
+                <div class="heatmap-cell low" title="INVPROD: Low">L</div>
+              </div>
+            </div>
+            <div class="heatmap-row">
+              <span class="heatmap-label">Code</span>
+              <div class="heatmap-cells">
+                <div class="heatmap-cell med" title="FINPROD: Medium">M</div>
+                <div class="heatmap-cell high" title="HRPROD: High">H</div>
+                <div class="heatmap-cell low" title="INVPROD: Low">L</div>
+              </div>
+            </div>
+            <div class="heatmap-row">
+              <span class="heatmap-label">Data</span>
+              <div class="heatmap-cells">
+                <div class="heatmap-cell med" title="FINPROD: Medium">M</div>
+                <div class="heatmap-cell med" title="HRPROD: Medium">M</div>
+                <div class="heatmap-cell low" title="INVPROD: Low">L</div>
+              </div>
+            </div>
+            <div class="heatmap-row">
+              <span class="heatmap-label">Performance</span>
+              <div class="heatmap-cells">
+                <div class="heatmap-cell high" title="FINPROD: High">H</div>
+                <div class="heatmap-cell med" title="HRPROD: Medium">M</div>
+                <div class="heatmap-cell low" title="INVPROD: Low">L</div>
+              </div>
+            </div>
+            <div class="heatmap-row">
+              <span class="heatmap-label">Security</span>
+              <div class="heatmap-cells">
+                <div class="heatmap-cell low" title="FINPROD: Low">L</div>
+                <div class="heatmap-cell med" title="HRPROD: Medium">M</div>
+                <div class="heatmap-cell low" title="INVPROD: Low">L</div>
+              </div>
+            </div>
+            <div class="heatmap-row">
+              <span class="heatmap-label">Cutover</span>
+              <div class="heatmap-cells">
+                <div class="heatmap-cell med" title="FINPROD: Medium">M</div>
+                <div class="heatmap-cell high" title="HRPROD: High">H</div>
+                <div class="heatmap-cell low" title="INVPROD: Low">L</div>
+              </div>
+            </div>
+          </div>
+          <div class="heatmap-legend">
+            <span class="heatmap-project">FINPROD</span>
+            <span class="heatmap-project">HRPROD</span>
+            <span class="heatmap-project">INVPROD</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== PROJECT PIPELINE VIEW ===================== -->
+    <section class="view" id="view-project">
+      <div class="view-header">
+        <div>
+          <h1 id="projectViewTitle">Migration Project</h1>
+          <p class="view-subtitle" id="projectViewSubtitle">Select a project from the dashboard to load its control-plane state.</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-ghost">Export Report</button>
+          <button class="btn btn-primary">Run Next Phase</button>
+        </div>
+      </div>
+
+      <!-- Pipeline Visualization -->
+      <div class="pipeline-container glass-card">
+        <h3>Migration Pipeline</h3>
+        <div class="pipeline" id="projectPipelineStages">
+          <div class="pipeline-stage completed">
+            <div class="stage-node"><svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg></div>
+            <div class="stage-connector done"></div>
+            <span class="stage-label">Discover</span>
+            <span class="stage-time">Jun 1</span>
+          </div>
+          <div class="pipeline-stage completed">
+            <div class="stage-node"><svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg></div>
+            <div class="stage-connector done"></div>
+            <span class="stage-label">Assess</span>
+            <span class="stage-time">Jun 3</span>
+          </div>
+          <div class="pipeline-stage completed">
+            <div class="stage-node"><svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg></div>
+            <div class="stage-connector done"></div>
+            <span class="stage-label">Convert</span>
+            <span class="stage-time">Jun 5</span>
+          </div>
+          <div class="pipeline-stage completed">
+            <div class="stage-node"><svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg></div>
+            <div class="stage-connector active-connector"></div>
+            <span class="stage-label">Deploy</span>
+            <span class="stage-time">Jun 7</span>
+          </div>
+          <div class="pipeline-stage active-stage">
+            <div class="stage-node running"><div class="pulse-ring"></div>
+              <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path d="M3 12v3c0 1.657 3.134 3 7 3s7-1.343 7-3v-3c0 1.657-3.134 3-7 3s-7-1.343-7-3z"/></svg>
+            </div>
+            <div class="stage-connector"></div>
+            <span class="stage-label">Full Load</span>
+            <span class="stage-time">In Progress</span>
+          </div>
+          <div class="pipeline-stage">
+            <div class="stage-node pending"><svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14" opacity="0.4"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1z" clip-rule="evenodd"/></svg></div>
+            <div class="stage-connector"></div>
+            <span class="stage-label">CDC</span>
+            <span class="stage-time">Pending</span>
+          </div>
+          <div class="pipeline-stage">
+            <div class="stage-node pending"><svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14" opacity="0.4"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg></div>
+            <div class="stage-connector"></div>
+            <span class="stage-label">Validate</span>
+            <span class="stage-time">Pending</span>
+          </div>
+          <div class="pipeline-stage">
+            <div class="stage-node pending"><svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14" opacity="0.4"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/></svg></div>
+            <div class="stage-connector last"></div>
+            <span class="stage-label">Cutover</span>
+            <span class="stage-time">Planned Jul 1</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Project Details Grid -->
+      <div class="project-details-grid">
+        <div class="glass-card">
+          <h3>Source Database</h3>
+          <div class="detail-list" id="sourceDetailList">
+            <div class="detail-row"><span>Engine</span><span class="detail-value">Oracle 19c EE</span></div>
+            <div class="detail-row"><span>Host</span><span class="detail-value mono">oraprod-fin.internal:1521</span></div>
+            <div class="detail-row"><span>Schemas</span><span class="detail-value">4</span></div>
+            <div class="detail-row"><span>Tables</span><span class="detail-value">847</span></div>
+            <div class="detail-row"><span>Packages</span><span class="detail-value">312</span></div>
+            <div class="detail-row"><span>Total Size</span><span class="detail-value">1.8 TB</span></div>
+            <div class="detail-row"><span>Status</span><span class="detail-value status-badge connected">Connected</span></div>
+          </div>
+        </div>
+        <div class="glass-card">
+          <h3>Target Database</h3>
+          <div class="detail-list" id="targetDetailList">
+            <div class="detail-row"><span>Engine</span><span class="detail-value">PostgreSQL 16.3</span></div>
+            <div class="detail-row"><span>Host</span><span class="detail-value mono">pg-fin-prod.us-east-1.rds.amazonaws.com</span></div>
+            <div class="detail-row"><span>Schemas</span><span class="detail-value">4</span></div>
+            <div class="detail-row"><span>Tables Deployed</span><span class="detail-value">847 / 847</span></div>
+            <div class="detail-row"><span>Code Deployed</span><span class="detail-value">289 / 312</span></div>
+            <div class="detail-row"><span>Data Loaded</span><span class="detail-value">1.32 TB / 1.8 TB</span></div>
+            <div class="detail-row"><span>Status</span><span class="detail-value status-badge connected">Connected</span></div>
+          </div>
+        </div>
+        <div class="glass-card">
+          <h3>Migration Summary</h3>
+          <div class="detail-list" id="migrationSummaryList">
+            <div class="detail-row"><span>Mode</span><span class="detail-value">Migration + CDC</span></div>
+            <div class="detail-row"><span>Started</span><span class="detail-value">Jun 1, 2026</span></div>
+            <div class="detail-row"><span>Target Cutover</span><span class="detail-value">Jul 1, 2026</span></div>
+            <div class="detail-row"><span>Current Phase</span><span class="detail-value status-badge running">Full Load</span></div>
+            <div class="detail-row"><span>Open Issues</span><span class="detail-value">3 Critical · 14 Warning</span></div>
+            <div class="detail-row"><span>Auto-Convert Rate</span><span class="detail-value">92.6%</span></div>
+            <div class="detail-row"><span>Owner</span><span class="detail-value">Sai Endla</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="project-ops-grid">
+        <div class="glass-card">
+          <div class="table-header">
+            <h3>Project Agents</h3>
+          </div>
+          <div class="issues-table-wrapper">
+            <table class="issues-table">
+              <thead>
+                <tr>
+                  <th>Agent</th>
+                  <th>Runtime</th>
+                  <th>Status</th>
+                  <th>Heartbeat</th>
+                </tr>
+              </thead>
+              <tbody id="projectAgentsBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="glass-card">
+          <div class="table-header">
+            <h3>Execution Queue</h3>
+          </div>
+          <div class="issues-table-wrapper">
+            <table class="issues-table">
+              <thead>
+                <tr>
+                  <th>Job</th>
+                  <th>Capability</th>
+                  <th>Status</th>
+                  <th>Agent</th>
+                  <th>Attempts</th>
+                </tr>
+              </thead>
+              <tbody id="projectJobsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== ASSESSMENT VIEW ===================== -->
+    <section class="view" id="view-assessment">
+      <div class="view-header">
+        <div>
+          <h1>Assessment Report</h1>
+          <p class="view-subtitle">FINPROD — Migration complexity and risk analysis</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-ghost">Export PDF</button>
+          <button class="btn btn-primary">Re-run Assessment</button>
+        </div>
+      </div>
+
+      <!-- Complexity Score -->
+      <div class="assessment-top">
+        <div class="complexity-card glass-card">
+          <h3>Migration Complexity Score</h3>
+          <div class="complexity-gauge">
+            <svg viewBox="0 0 200 120" class="gauge-svg">
+              <defs>
+                <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#10b981"/>
+                  <stop offset="50%" stop-color="#f59e0b"/>
+                  <stop offset="100%" stop-color="#ef4444"/>
+                </linearGradient>
+              </defs>
+              <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="12" stroke-linecap="round"/>
+              <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="url(#gaugeGrad)" stroke-width="12" stroke-linecap="round" stroke-dasharray="251" stroke-dashoffset="75" class="gauge-fill"/>
+              <text x="100" y="85" text-anchor="middle" fill="white" font-size="32" font-weight="700">68</text>
+              <text x="100" y="105" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="11">MODERATE</text>
+            </svg>
+          </div>
+        </div>
+
+        <div class="risk-breakdown glass-card">
+          <h3>Risk Breakdown</h3>
+          <div class="risk-bars">
+            <div class="risk-bar-item">
+              <div class="risk-bar-header"><span>Schema Risk</span><span class="risk-score low">Low</span></div>
+              <div class="progress-bar"><div class="progress-fill" style="width: 25%; --bar-color: #10b981"></div></div>
+            </div>
+            <div class="risk-bar-item">
+              <div class="risk-bar-header"><span>Code Portability</span><span class="risk-score high">High</span></div>
+              <div class="progress-bar"><div class="progress-fill" style="width: 78%; --bar-color: #ef4444"></div></div>
+            </div>
+            <div class="risk-bar-item">
+              <div class="risk-bar-header"><span>Data Risk</span><span class="risk-score med">Medium</span></div>
+              <div class="progress-bar"><div class="progress-fill" style="width: 52%; --bar-color: #f59e0b"></div></div>
+            </div>
+            <div class="risk-bar-item">
+              <div class="risk-bar-header"><span>Performance Risk</span><span class="risk-score high">High</span></div>
+              <div class="progress-bar"><div class="progress-fill" style="width: 71%; --bar-color: #ef4444"></div></div>
+            </div>
+            <div class="risk-bar-item">
+              <div class="risk-bar-header"><span>Security Risk</span><span class="risk-score low">Low</span></div>
+              <div class="progress-bar"><div class="progress-fill" style="width: 18%; --bar-color: #10b981"></div></div>
+            </div>
+            <div class="risk-bar-item">
+              <div class="risk-bar-header"><span>Cutover Risk</span><span class="risk-score med">Medium</span></div>
+              <div class="progress-bar"><div class="progress-fill" style="width: 45%; --bar-color: #f59e0b"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="conversion-summary glass-card">
+          <h3>Conversion Forecast</h3>
+          <div class="donut-chart">
+            <svg viewBox="0 0 160 160">
+              <circle cx="80" cy="80" r="60" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="20"/>
+              <circle cx="80" cy="80" r="60" fill="none" stroke="#10b981" stroke-width="20" stroke-dasharray="282.7" stroke-dashoffset="28.3" transform="rotate(-90 80 80)" class="donut-auto"/>
+              <circle cx="80" cy="80" r="60" fill="none" stroke="#f59e0b" stroke-width="20" stroke-dasharray="282.7" stroke-dashoffset="254.4" transform="rotate(234 80 80)" class="donut-review"/>
+              <circle cx="80" cy="80" r="60" fill="none" stroke="#ef4444" stroke-width="20" stroke-dasharray="282.7" stroke-dashoffset="268.6" transform="rotate(270 80 80)" class="donut-manual"/>
+              <text x="80" y="74" text-anchor="middle" fill="white" font-size="22" font-weight="700">90%</text>
+              <text x="80" y="92" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10">Auto</text>
+            </svg>
+          </div>
+          <div class="donut-legend">
+            <div class="legend-item"><span class="legend-dot" style="background:#10b981"></span>Auto (90%)</div>
+            <div class="legend-item"><span class="legend-dot" style="background:#f59e0b"></span>Review (5%)</div>
+            <div class="legend-item"><span class="legend-dot" style="background:#ef4444"></span>Manual (5%)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Issues Table -->
+      <div class="glass-card">
+        <div class="table-header">
+          <h3>Issue Catalog</h3>
+          <div class="table-filters">
+            <select class="select-filter" id="severityFilter">
+              <option value="all">All Severities</option>
+              <option value="critical">Critical</option>
+              <option value="warning">Warning</option>
+              <option value="info">Info</option>
+            </select>
+            <select class="select-filter" id="categoryFilter">
+              <option value="all">All Categories</option>
+              <option value="datatype">Datatype</option>
+              <option value="syntax">Syntax</option>
+              <option value="semantic">Semantic</option>
+              <option value="performance">Performance</option>
+            </select>
+          </div>
+        </div>
+        <div class="issues-table-wrapper">
+          <table class="issues-table" id="issuesTable">
+            <thead>
+              <tr>
+                <th>Severity</th>
+                <th>Object</th>
+                <th>Type</th>
+                <th>Category</th>
+                <th>Issue</th>
+                <th>Auto-Fix</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="severity critical">Critical</span></td>
+                <td class="mono">PKG_FINANCE.CALC_REVENUE</td>
+                <td>Package Body</td>
+                <td>Syntax</td>
+                <td>CONNECT BY PRIOR not supported in PostgreSQL</td>
+                <td><span class="autofix no">No</span></td>
+                <td><span class="issue-status open">Open</span></td>
+              </tr>
+              <tr>
+                <td><span class="severity critical">Critical</span></td>
+                <td class="mono">PKG_AUDIT.LOG_CHANGES</td>
+                <td>Package Body</td>
+                <td>Semantic</td>
+                <td>AUTONOMOUS_TRANSACTION pragma — no direct PG equivalent</td>
+                <td><span class="autofix no">No</span></td>
+                <td><span class="issue-status open">Open</span></td>
+              </tr>
+              <tr>
+                <td><span class="severity critical">Critical</span></td>
+                <td class="mono">VW_HIER_ROLLUP</td>
+                <td>View</td>
+                <td>Syntax</td>
+                <td>Hierarchical query with CONNECT BY NOCYCLE</td>
+                <td><span class="autofix yes">Yes</span></td>
+                <td><span class="issue-status open">Open</span></td>
+              </tr>
+              <tr>
+                <td><span class="severity warning">Warning</span></td>
+                <td class="mono">TBL_TRANSACTIONS</td>
+                <td>Table</td>
+                <td>Datatype</td>
+                <td>NUMBER(38,10) may lose precision with NUMERIC</td>
+                <td><span class="autofix yes">Yes</span></td>
+                <td><span class="issue-status resolved">Resolved</span></td>
+              </tr>
+              <tr>
+                <td><span class="severity warning">Warning</span></td>
+                <td class="mono">IDX_TXN_DATE_PART</td>
+                <td>Index</td>
+                <td>Performance</td>
+                <td>Function-based index uses Oracle-specific NLS settings</td>
+                <td><span class="autofix yes">Yes</span></td>
+                <td><span class="issue-status open">Open</span></td>
+              </tr>
+              <tr>
+                <td><span class="severity warning">Warning</span></td>
+                <td class="mono">PKG_ORDERS.GET_NEXT_ID</td>
+                <td>Function</td>
+                <td>Semantic</td>
+                <td>Sequence NOCACHE behavior differs in PostgreSQL</td>
+                <td><span class="autofix yes">Yes</span></td>
+                <td><span class="issue-status open">Open</span></td>
+              </tr>
+              <tr>
+                <td><span class="severity info">Info</span></td>
+                <td class="mono">SYN_PUBLIC_ORDERS</td>
+                <td>Synonym</td>
+                <td>Syntax</td>
+                <td>Public synonyms not supported — use search_path</td>
+                <td><span class="autofix yes">Yes</span></td>
+                <td><span class="issue-status resolved">Resolved</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== SCHEMA CONVERTER VIEW (AWS SCT-Like) ===================== -->
+    <section class="view" id="view-converter">
+      <div class="view-header">
+        <div>
+          <h1>Schema Converter</h1>
+          <p class="view-subtitle">Side-by-side Oracle → PostgreSQL conversion workbench</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-ghost">Run Rules</button>
+          <button class="btn btn-primary" id="convertAllBtn">Convert Selected</button>
+        </div>
+      </div>
+
+      <div class="converter-layout">
+        <!-- Source Tree Panel -->
+        <div class="tree-panel glass-card">
+          <div class="tree-panel-header">
+            <div class="tree-title">
+              <span class="db-icon oracle-icon">ORA</span>
+              Source: FINPROD
+            </div>
+            <input type="text" class="tree-search" placeholder="Filter objects..." id="treeSearch">
+          </div>
+          <div class="object-tree" id="objectTree">
+            <div class="tree-node expanded" data-type="schema">
+              <div class="tree-node-header" onclick="toggleTree(this)">
+                <svg class="tree-arrow" viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                <span class="tree-icon schema">S</span>
+                <span>FINANCE_CORE</span>
+                <span class="tree-count">423 objects</span>
+              </div>
+              <div class="tree-children">
+                <div class="tree-node expanded" data-type="tables">
+                  <div class="tree-node-header" onclick="toggleTree(this)">
+                    <svg class="tree-arrow" viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                    <span class="tree-icon table">T</span>
+                    <span>Tables</span>
+                    <span class="tree-count">234</span>
+                  </div>
+                  <div class="tree-children">
+                    <div class="tree-leaf selected" onclick="selectObject(this, 'table', 'ACCOUNTS')" data-obj="ACCOUNTS"><span class="tree-icon table">T</span><span>ACCOUNTS</span><span class="conv-badge green">Auto</span></div>
+                    <div class="tree-leaf" onclick="selectObject(this, 'table', 'TRANSACTIONS')" data-obj="TRANSACTIONS"><span class="tree-icon table">T</span><span>TRANSACTIONS</span><span class="conv-badge amber">Review</span></div>
+                    <div class="tree-leaf" onclick="selectObject(this, 'table', 'GL_ENTRIES')" data-obj="GL_ENTRIES"><span class="tree-icon table">T</span><span>GL_ENTRIES</span><span class="conv-badge green">Auto</span></div>
+                    <div class="tree-leaf" onclick="selectObject(this, 'table', 'JOURNAL_HEADERS')" data-obj="JOURNAL_HEADERS"><span class="tree-icon table">T</span><span>JOURNAL_HEADERS</span><span class="conv-badge green">Auto</span></div>
+                    <div class="tree-leaf" onclick="selectObject(this, 'table', 'JOURNAL_LINES')" data-obj="JOURNAL_LINES"><span class="tree-icon table">T</span><span>JOURNAL_LINES</span><span class="conv-badge green">Auto</span></div>
+                    <div class="tree-leaf" onclick="selectObject(this, 'table', 'COST_CENTERS')" data-obj="COST_CENTERS"><span class="tree-icon table">T</span><span>COST_CENTERS</span><span class="conv-badge green">Auto</span></div>
+                  </div>
+                </div>
+                <div class="tree-node" data-type="views">
+                  <div class="tree-node-header" onclick="toggleTree(this)">
+                    <svg class="tree-arrow" viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                    <span class="tree-icon view">V</span>
+                    <span>Views</span>
+                    <span class="tree-count">45</span>
+                  </div>
+                  <div class="tree-children">
+                    <div class="tree-leaf" onclick="selectObject(this, 'view', 'VW_ACCOUNT_BALANCES')" data-obj="VW_ACCOUNT_BALANCES"><span class="tree-icon view">V</span><span>VW_ACCOUNT_BALANCES</span><span class="conv-badge green">Auto</span></div>
+                    <div class="tree-leaf" onclick="selectObject(this, 'view', 'VW_HIER_ROLLUP')" data-obj="VW_HIER_ROLLUP"><span class="tree-icon view">V</span><span>VW_HIER_ROLLUP</span><span class="conv-badge red">Manual</span></div>
+                  </div>
+                </div>
+                <div class="tree-node" data-type="packages">
+                  <div class="tree-node-header" onclick="toggleTree(this)">
+                    <svg class="tree-arrow" viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                    <span class="tree-icon package">P</span>
+                    <span>Packages</span>
+                    <span class="tree-count">89</span>
+                  </div>
+                  <div class="tree-children">
+                    <div class="tree-leaf" onclick="selectObject(this, 'package', 'PKG_FINANCE')" data-obj="PKG_FINANCE"><span class="tree-icon package">P</span><span>PKG_FINANCE</span><span class="conv-badge red">Manual</span></div>
+                    <div class="tree-leaf" onclick="selectObject(this, 'package', 'PKG_ORDERS')" data-obj="PKG_ORDERS"><span class="tree-icon package">P</span><span>PKG_ORDERS</span><span class="conv-badge amber">Review</span></div>
+                    <div class="tree-leaf" onclick="selectObject(this, 'package', 'PKG_AUDIT')" data-obj="PKG_AUDIT"><span class="tree-icon package">P</span><span>PKG_AUDIT</span><span class="conv-badge red">Manual</span></div>
+                  </div>
+                </div>
+                <div class="tree-node" data-type="sequences">
+                  <div class="tree-node-header" onclick="toggleTree(this)">
+                    <svg class="tree-arrow" viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                    <span class="tree-icon seq">#</span>
+                    <span>Sequences</span>
+                    <span class="tree-count">55</span>
+                  </div>
+                  <div class="tree-children">
+                    <div class="tree-leaf" onclick="selectObject(this, 'sequence', 'SEQ_ACCOUNT_ID')"><span class="tree-icon seq">#</span><span>SEQ_ACCOUNT_ID</span><span class="conv-badge green">Auto</span></div>
+                    <div class="tree-leaf" onclick="selectObject(this, 'sequence', 'SEQ_TXN_ID')"><span class="tree-icon seq">#</span><span>SEQ_TXN_ID</span><span class="conv-badge green">Auto</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="tree-node" data-type="schema">
+              <div class="tree-node-header" onclick="toggleTree(this)">
+                <svg class="tree-arrow" viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                <span class="tree-icon schema">S</span>
+                <span>FINANCE_REPORTING</span>
+                <span class="tree-count">189 objects</span>
+              </div>
+              <div class="tree-children"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Code Comparison Panel -->
+        <div class="code-panel">
+          <div class="code-split">
+            <!-- Source Code -->
+            <div class="code-editor glass-card">
+              <div class="code-editor-header">
+                <div class="code-editor-title">
+                  <span class="db-icon oracle-icon">ORA</span>
+                  <span>Source — Oracle DDL</span>
+                </div>
+                <span class="code-lang">PL/SQL</span>
+              </div>
+              <pre class="code-content" id="sourceCode"><code><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="obj">FINANCE_CORE</span>.<span class="obj">ACCOUNTS</span> (
+    <span class="col">ACCOUNT_ID</span>      <span class="typ">NUMBER</span>(12)        <span class="kw">NOT NULL</span>,
+    <span class="col">ACCOUNT_CODE</span>    <span class="typ">VARCHAR2</span>(20)      <span class="kw">NOT NULL</span>,
+    <span class="col">ACCOUNT_NAME</span>    <span class="typ">VARCHAR2</span>(200),
+    <span class="col">ACCOUNT_TYPE</span>    <span class="typ">VARCHAR2</span>(30)      <span class="kw">DEFAULT</span> <span class="str">'GENERAL'</span>,
+    <span class="col">PARENT_ID</span>       <span class="typ">NUMBER</span>(12),
+    <span class="col">CURRENCY_CODE</span>   <span class="typ">CHAR</span>(3)           <span class="kw">DEFAULT</span> <span class="str">'USD'</span>,
+    <span class="col">BALANCE</span>         <span class="typ">NUMBER</span>(18,4),
+    <span class="col">IS_ACTIVE</span>       <span class="typ">NUMBER</span>(1)         <span class="kw">DEFAULT</span> 1,
+    <span class="col">CREATED_DATE</span>    <span class="typ">DATE</span>              <span class="kw">DEFAULT</span> <span class="fn">SYSDATE</span>,
+    <span class="col">MODIFIED_DATE</span>   <span class="typ">DATE</span>,
+    <span class="col">MODIFIED_BY</span>     <span class="typ">VARCHAR2</span>(60),
+    <span class="col">REMARKS</span>         <span class="typ">CLOB</span>,
+    <span class="kw">CONSTRAINT</span> <span class="obj">PK_ACCOUNTS</span> <span class="kw">PRIMARY KEY</span> (<span class="col">ACCOUNT_ID</span>),
+    <span class="kw">CONSTRAINT</span> <span class="obj">FK_ACCT_PARENT</span> <span class="kw">FOREIGN KEY</span> (<span class="col">PARENT_ID</span>)
+        <span class="kw">REFERENCES</span> <span class="obj">ACCOUNTS</span>(<span class="col">ACCOUNT_ID</span>),
+    <span class="kw">CONSTRAINT</span> <span class="obj">CHK_ACCT_TYPE</span> <span class="kw">CHECK</span> (
+        <span class="col">ACCOUNT_TYPE</span> <span class="kw">IN</span> (<span class="str">'GENERAL'</span>,<span class="str">'ASSET'</span>,<span class="str">'LIABILITY'</span>,<span class="str">'EQUITY'</span>,<span class="str">'REVENUE'</span>,<span class="str">'EXPENSE'</span>)
+    )
+)
+<span class="kw">TABLESPACE</span> <span class="obj">FIN_DATA</span>
+<span class="kw">STORAGE</span> (<span class="kw">INITIAL</span> 1M <span class="kw">NEXT</span> 1M)
+<span class="kw">LOGGING</span>;</code></pre>
+            </div>
+
+            <!-- Target Code -->
+            <div class="code-editor glass-card">
+              <div class="code-editor-header">
+                <div class="code-editor-title">
+                  <span class="db-icon pg-icon">PG</span>
+                  <span>Target — PostgreSQL DDL</span>
+                </div>
+                <span class="code-lang">PostgreSQL</span>
+              </div>
+              <pre class="code-content" id="targetCode"><code><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="obj">finance_core</span>.<span class="obj">accounts</span> (
+    <span class="col">account_id</span>      <span class="typ">BIGINT</span>            <span class="kw">NOT NULL</span>,
+    <span class="col">account_code</span>    <span class="typ">VARCHAR</span>(20)       <span class="kw">NOT NULL</span>,
+    <span class="col">account_name</span>    <span class="typ">VARCHAR</span>(200),
+    <span class="col">account_type</span>    <span class="typ">VARCHAR</span>(30)       <span class="kw">DEFAULT</span> <span class="str">'GENERAL'</span>,
+    <span class="col">parent_id</span>       <span class="typ">BIGINT</span>,
+    <span class="col">currency_code</span>   <span class="typ">CHAR</span>(3)           <span class="kw">DEFAULT</span> <span class="str">'USD'</span>,
+    <span class="col">balance</span>         <span class="typ">NUMERIC</span>(18,4),
+    <span class="col">is_active</span>       <span class="typ">BOOLEAN</span>           <span class="kw">DEFAULT</span> <span class="lit">TRUE</span>,  <span class="cmt">-- ⚡ NUMBER(1) → BOOLEAN</span>
+    <span class="col">created_date</span>    <span class="typ">TIMESTAMPTZ</span>       <span class="kw">DEFAULT</span> <span class="fn">NOW</span>(), <span class="cmt">-- ⚡ DATE+SYSDATE → TIMESTAMPTZ+NOW()</span>
+    <span class="col">modified_date</span>   <span class="typ">TIMESTAMPTZ</span>,
+    <span class="col">modified_by</span>     <span class="typ">VARCHAR</span>(60),
+    <span class="col">remarks</span>         <span class="typ">TEXT</span>,             <span class="cmt">-- ⚡ CLOB → TEXT</span>
+    <span class="kw">CONSTRAINT</span> <span class="obj">pk_accounts</span> <span class="kw">PRIMARY KEY</span> (<span class="col">account_id</span>),
+    <span class="kw">CONSTRAINT</span> <span class="obj">fk_acct_parent</span> <span class="kw">FOREIGN KEY</span> (<span class="col">parent_id</span>)
+        <span class="kw">REFERENCES</span> <span class="obj">accounts</span>(<span class="col">account_id</span>),
+    <span class="kw">CONSTRAINT</span> <span class="obj">chk_acct_type</span> <span class="kw">CHECK</span> (
+        <span class="col">account_type</span> <span class="kw">IN</span> (<span class="str">'GENERAL'</span>,<span class="str">'ASSET'</span>,<span class="str">'LIABILITY'</span>,<span class="str">'EQUITY'</span>,<span class="str">'REVENUE'</span>,<span class="str">'EXPENSE'</span>)
+    )
+);
+<span class="cmt">-- ⚡ TABLESPACE/STORAGE clauses removed (PG-managed)</span>
+<span class="cmt">-- ⚡ 4 rules applied · Confidence: HIGH</span></code></pre>
+            </div>
+          </div>
+
+          <!-- Conversion Issues Panel -->
+          <div class="conversion-issues glass-card">
+            <h3>Conversion Rules Applied</h3>
+            <div class="rule-list">
+              <div class="rule-item">
+                <span class="rule-badge auto">AUTO</span>
+                <div class="rule-info">
+                  <span class="rule-name">NUMBER(1) → BOOLEAN</span>
+                  <span class="rule-desc">Oracle NUMBER(1) with 0/1 values maps to PostgreSQL BOOLEAN</span>
+                </div>
+                <span class="rule-confidence high">High</span>
+              </div>
+              <div class="rule-item">
+                <span class="rule-badge auto">AUTO</span>
+                <div class="rule-info">
+                  <span class="rule-name">DATE + SYSDATE → TIMESTAMPTZ + NOW()</span>
+                  <span class="rule-desc">Oracle DATE (includes time) maps to TIMESTAMPTZ; SYSDATE → NOW()</span>
+                </div>
+                <span class="rule-confidence high">High</span>
+              </div>
+              <div class="rule-item">
+                <span class="rule-badge auto">AUTO</span>
+                <div class="rule-info">
+                  <span class="rule-name">CLOB → TEXT</span>
+                  <span class="rule-desc">Oracle CLOB maps directly to PostgreSQL TEXT type</span>
+                </div>
+                <span class="rule-confidence high">High</span>
+              </div>
+              <div class="rule-item">
+                <span class="rule-badge auto">AUTO</span>
+                <div class="rule-info">
+                  <span class="rule-name">Remove Storage Clauses</span>
+                  <span class="rule-desc">TABLESPACE, STORAGE, LOGGING are Oracle-specific and not needed in PG</span>
+                </div>
+                <span class="rule-confidence high">High</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== DATA LOAD VIEW ===================== -->
+    <section class="view" id="view-dataload">
+      <div class="view-header">
+        <div>
+          <h1>Data Load Monitor</h1>
+          <p class="view-subtitle">FINPROD — Bulk load progress and throughput</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-ghost">Retry Failed</button>
+          <button class="btn btn-primary">Pause Load</button>
+        </div>
+      </div>
+
+      <!-- Load Stats -->
+      <div class="load-stats-grid">
+        <div class="load-stat glass-card">
+          <div class="load-stat-value">847 / 847</div>
+          <div class="load-stat-label">Tables Queued</div>
+          <div class="load-stat-bar"><div class="progress-fill" style="width:100%; --bar-color:#7c3aed"></div></div>
+        </div>
+        <div class="load-stat glass-card">
+          <div class="load-stat-value">1.32 TB</div>
+          <div class="load-stat-label">Data Transferred</div>
+          <div class="load-stat-bar"><div class="progress-fill" style="width:73%; --bar-color:#06b6d4"></div></div>
+        </div>
+        <div class="load-stat glass-card">
+          <div class="load-stat-value">245 MB/s</div>
+          <div class="load-stat-label">Current Throughput</div>
+          <div class="throughput-sparkline" id="sparkline"></div>
+        </div>
+        <div class="load-stat glass-card">
+          <div class="load-stat-value">~3h 12m</div>
+          <div class="load-stat-label">Est. Remaining</div>
+          <div class="load-stat-detail">ETA: Jun 12, 19:15 UTC</div>
+        </div>
+      </div>
+
+      <!-- Table Load Progress -->
+      <div class="glass-card">
+        <h3>Table Load Progress</h3>
+        <div class="table-load-grid">
+          <div class="table-load-item completed">
+            <div class="table-load-header">
+              <span class="mono">TRANSACTIONS</span>
+              <span class="table-load-status done">✓ Complete</span>
+            </div>
+            <div class="table-load-meta">412M rows · 340 GB · 16 chunks · 45 min</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:100%; --bar-color:#10b981"></div></div>
+          </div>
+          <div class="table-load-item completed">
+            <div class="table-load-header">
+              <span class="mono">GL_ENTRIES</span>
+              <span class="table-load-status done">✓ Complete</span>
+            </div>
+            <div class="table-load-meta">189M rows · 210 GB · 12 chunks · 32 min</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:100%; --bar-color:#10b981"></div></div>
+          </div>
+          <div class="table-load-item running">
+            <div class="table-load-header">
+              <span class="mono">JOURNAL_LINES</span>
+              <span class="table-load-status in-progress">⟳ Loading</span>
+            </div>
+            <div class="table-load-meta">98M rows · 156 GB · Chunk 7/10 · 18 min elapsed</div>
+            <div class="progress-bar"><div class="progress-fill loading-anim" style="width:70%; --bar-color:#06b6d4"></div></div>
+          </div>
+          <div class="table-load-item running">
+            <div class="table-load-header">
+              <span class="mono">COST_CENTERS</span>
+              <span class="table-load-status in-progress">⟳ Loading</span>
+            </div>
+            <div class="table-load-meta">2.1M rows · 4.2 GB · Chunk 2/3 · 3 min elapsed</div>
+            <div class="progress-bar"><div class="progress-fill loading-anim" style="width:66%; --bar-color:#06b6d4"></div></div>
+          </div>
+          <div class="table-load-item failed">
+            <div class="table-load-header">
+              <span class="mono">DOCUMENT_BLOBS</span>
+              <span class="table-load-status error">✕ Failed</span>
+            </div>
+            <div class="table-load-meta">45K rows · 89 GB · Chunk 3/5 failed — LOB size exceeded</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:40%; --bar-color:#ef4444"></div></div>
+          </div>
+          <div class="table-load-item queued">
+            <div class="table-load-header">
+              <span class="mono">AUDIT_LOG</span>
+              <span class="table-load-status pending">◌ Queued</span>
+            </div>
+            <div class="table-load-meta">567M rows · 420 GB · 20 chunks planned</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:0%; --bar-color:#4b5563"></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== CDC VIEW ===================== -->
+    <section class="view" id="view-cdc">
+      <div class="view-header">
+        <div>
+          <h1>CDC / Replication</h1>
+          <p class="view-subtitle">Change data capture streams and replication health</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-ghost">Stop Stream</button>
+          <button class="btn btn-primary">Start CDC</button>
+        </div>
+      </div>
+
+      <div class="cdc-layout">
+        <div class="cdc-stream-card glass-card">
+          <div class="stream-header">
+            <div>
+              <h3>Primary Replication Stream</h3>
+              <span class="stream-id mono">stream-finprod-001</span>
+            </div>
+            <span class="stream-status active-stream">
+              <span class="pulse-dot"></span> Active
+            </span>
+          </div>
+
+          <div class="cdc-metrics">
+            <div class="cdc-metric">
+              <span class="cdc-metric-value">2.3s</span>
+              <span class="cdc-metric-label">Current Lag</span>
+            </div>
+            <div class="cdc-metric">
+              <span class="cdc-metric-value">14,821</span>
+              <span class="cdc-metric-label">Events/sec</span>
+            </div>
+            <div class="cdc-metric">
+              <span class="cdc-metric-value">2.1M</span>
+              <span class="cdc-metric-label">Changes Applied</span>
+            </div>
+            <div class="cdc-metric">
+              <span class="cdc-metric-value">0</span>
+              <span class="cdc-metric-label">Apply Errors</span>
+            </div>
+          </div>
+
+          <!-- Lag Chart -->
+          <div class="lag-chart-container">
+            <h4>Replication Lag (Last 30 min)</h4>
+            <div class="lag-chart" id="lagChart">
+              <svg viewBox="0 0 600 120" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="lagGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.3"/>
+                    <stop offset="100%" stop-color="#06b6d4" stop-opacity="0"/>
+                  </linearGradient>
+                </defs>
+                <!-- Threshold line -->
+                <line x1="0" y1="30" x2="600" y2="30" stroke="#ef4444" stroke-width="1" stroke-dasharray="4" opacity="0.4"/>
+                <text x="605" y="33" fill="#ef4444" font-size="9" opacity="0.6">10s threshold</text>
+                <!-- Lag area -->
+                <path d="M0,110 L20,108 L40,105 L60,100 L80,95 L100,98 L120,92 L140,95 L160,90 L180,88 L200,92 L220,85 L240,88 L260,90 L280,85 L300,82 L320,88 L340,90 L360,85 L380,88 L400,92 L420,88 L440,90 L460,95 L480,92 L500,88 L520,90 L540,92 L560,95 L580,98 L600,95 L600,120 L0,120 Z" fill="url(#lagGrad)"/>
+                <path d="M0,110 L20,108 L40,105 L60,100 L80,95 L100,98 L120,92 L140,95 L160,90 L180,88 L200,92 L220,85 L240,88 L260,90 L280,85 L300,82 L320,88 L340,90 L360,85 L380,88 L400,92 L420,88 L440,90 L460,95 L480,92 L500,88 L520,90 L540,92 L560,95 L580,98 L600,95" fill="none" stroke="#06b6d4" stroke-width="2"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="cdc-checkpoint">
+            <div class="checkpoint-item">
+              <span class="checkpoint-label">Source Checkpoint</span>
+              <span class="checkpoint-value mono">SCN: 48291047382</span>
+            </div>
+            <div class="checkpoint-item">
+              <span class="checkpoint-label">Target Checkpoint</span>
+              <span class="checkpoint-value mono">LSN: 0/4A8B2C10</span>
+            </div>
+            <div class="checkpoint-item">
+              <span class="checkpoint-label">Last Apply Success</span>
+              <span class="checkpoint-value">2 seconds ago</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="cdc-tables glass-card">
+          <h3>Table Replication Status</h3>
+          <div class="cdc-table-list">
+            <div class="cdc-table-item">
+              <span class="cdc-table-status synced"></span>
+              <span class="mono">TRANSACTIONS</span>
+              <span class="cdc-table-lag">1.2s lag</span>
+              <span class="cdc-table-rate">4,210 evt/s</span>
+            </div>
+            <div class="cdc-table-item">
+              <span class="cdc-table-status synced"></span>
+              <span class="mono">GL_ENTRIES</span>
+              <span class="cdc-table-lag">0.8s lag</span>
+              <span class="cdc-table-rate">3,891 evt/s</span>
+            </div>
+            <div class="cdc-table-item">
+              <span class="cdc-table-status synced"></span>
+              <span class="mono">ACCOUNTS</span>
+              <span class="cdc-table-lag">2.1s lag</span>
+              <span class="cdc-table-rate">1,240 evt/s</span>
+            </div>
+            <div class="cdc-table-item">
+              <span class="cdc-table-status synced"></span>
+              <span class="mono">JOURNAL_HEADERS</span>
+              <span class="cdc-table-lag">1.5s lag</span>
+              <span class="cdc-table-rate">2,870 evt/s</span>
+            </div>
+            <div class="cdc-table-item">
+              <span class="cdc-table-status synced"></span>
+              <span class="mono">JOURNAL_LINES</span>
+              <span class="cdc-table-lag">3.4s lag</span>
+              <span class="cdc-table-rate">2,610 evt/s</span>
+            </div>
+            <div class="cdc-table-item">
+              <span class="cdc-table-status warning-status"></span>
+              <span class="mono">COST_CENTERS</span>
+              <span class="cdc-table-lag">5.1s lag</span>
+              <span class="cdc-table-rate">890 evt/s</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== VALIDATION VIEW ===================== -->
+    <section class="view" id="view-validation">
+      <div class="view-header">
+        <div>
+          <h1>Validation Results</h1>
+          <p class="view-subtitle">FINPROD — Schema, data, and code validation</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-primary">Run Full Validation</button>
+        </div>
+      </div>
+
+      <div class="validation-gates">
+        <div class="gate-card glass-card passed">
+          <div class="gate-icon">✓</div>
+          <h4>Structural</h4>
+          <p>847/847 tables · 1,204/1,204 columns</p>
+          <span class="gate-status">Passed</span>
+        </div>
+        <div class="gate-card glass-card passed">
+          <div class="gate-icon">✓</div>
+          <h4>Semantic</h4>
+          <p>Datatypes · Defaults · Nullability</p>
+          <span class="gate-status">Passed</span>
+        </div>
+        <div class="gate-card glass-card warning-gate">
+          <div class="gate-icon">!</div>
+          <h4>Reconciliation</h4>
+          <p>Row counts match · 2 hash mismatches</p>
+          <span class="gate-status">Warning</span>
+        </div>
+        <div class="gate-card glass-card passed">
+          <div class="gate-icon">✓</div>
+          <h4>Code</h4>
+          <p>289/312 compiled · 23 pending review</p>
+          <span class="gate-status">Passed</span>
+        </div>
+        <div class="gate-card glass-card pending-gate">
+          <div class="gate-icon">◌</div>
+          <h4>Performance</h4>
+          <p>Not yet executed</p>
+          <span class="gate-status">Pending</span>
+        </div>
+      </div>
+
+      <!-- Reconciliation Table -->
+      <div class="glass-card">
+        <h3>Data Reconciliation</h3>
+        <div class="issues-table-wrapper">
+          <table class="issues-table">
+            <thead>
+              <tr>
+                <th>Table</th>
+                <th>Source Rows</th>
+                <th>Target Rows</th>
+                <th>Match</th>
+                <th>Hash Check</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="mono">TRANSACTIONS</td>
+                <td>412,847,291</td>
+                <td>412,847,291</td>
+                <td><span class="match-badge match">100%</span></td>
+                <td><span class="match-badge match">Match</span></td>
+                <td><span class="issue-status resolved">✓ Verified</span></td>
+              </tr>
+              <tr>
+                <td class="mono">GL_ENTRIES</td>
+                <td>189,234,102</td>
+                <td>189,234,102</td>
+                <td><span class="match-badge match">100%</span></td>
+                <td><span class="match-badge match">Match</span></td>
+                <td><span class="issue-status resolved">✓ Verified</span></td>
+              </tr>
+              <tr>
+                <td class="mono">ACCOUNTS</td>
+                <td>45,891</td>
+                <td>45,891</td>
+                <td><span class="match-badge match">100%</span></td>
+                <td><span class="match-badge mismatch">Mismatch</span></td>
+                <td><span class="issue-status open">⚠ Review</span></td>
+              </tr>
+              <tr>
+                <td class="mono">JOURNAL_HEADERS</td>
+                <td>23,456,789</td>
+                <td>23,456,789</td>
+                <td><span class="match-badge match">100%</span></td>
+                <td><span class="match-badge match">Match</span></td>
+                <td><span class="issue-status resolved">✓ Verified</span></td>
+              </tr>
+              <tr>
+                <td class="mono">COST_CENTERS</td>
+                <td>2,134,567</td>
+                <td>2,134,567</td>
+                <td><span class="match-badge match">100%</span></td>
+                <td><span class="match-badge mismatch">Mismatch</span></td>
+                <td><span class="issue-status open">⚠ Review</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== CUTOVER VIEW ===================== -->
+    <section class="view" id="view-cutover">
+      <div class="view-header">
+        <div>
+          <h1>Cutover Control</h1>
+          <p class="view-subtitle">FINPROD — Production cutover orchestration</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-danger" id="rollbackBtn">Rollback</button>
+          <button class="btn btn-primary" id="advanceBtn">Advance Gate</button>
+        </div>
+      </div>
+
+      <!-- Cutover State Machine -->
+      <div class="cutover-state-machine glass-card">
+        <h3>Cutover State Machine</h3>
+        <div class="state-flow">
+          <div class="state-node completed-state">
+            <div class="state-circle">✓</div>
+            <span>Planned</span>
+          </div>
+          <div class="state-connector done-conn"></div>
+          <div class="state-node completed-state">
+            <div class="state-circle">✓</div>
+            <span>Precheck Running</span>
+          </div>
+          <div class="state-connector done-conn"></div>
+          <div class="state-node completed-state">
+            <div class="state-circle">✓</div>
+            <span>Freeze Requested</span>
+          </div>
+          <div class="state-connector active-conn"></div>
+          <div class="state-node active-state-node">
+            <div class="state-circle pulse-state">⟳</div>
+            <span>Freeze Confirmed</span>
+          </div>
+          <div class="state-connector"></div>
+          <div class="state-node">
+            <div class="state-circle">◌</div>
+            <span>Final Sync</span>
+          </div>
+          <div class="state-connector"></div>
+          <div class="state-node">
+            <div class="state-circle">◌</div>
+            <span>Validation</span>
+          </div>
+          <div class="state-connector"></div>
+          <div class="state-node">
+            <div class="state-circle">◌</div>
+            <span>Ready to Switch</span>
+          </div>
+          <div class="state-connector"></div>
+          <div class="state-node">
+            <div class="state-circle">◌</div>
+            <span>Switched</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cutover Gates -->
+      <div class="cutover-gates-grid">
+        <div class="cutover-gate glass-card gate-passed">
+          <div class="cutover-gate-header">
+            <span class="gate-check">✓</span>
+            <h4>Zero Critical Issues</h4>
+          </div>
+          <p>All critical issues resolved or suppressed</p>
+          <span class="gate-approved">Approved by Sai Endla · Jun 11</span>
+        </div>
+        <div class="cutover-gate glass-card gate-passed">
+          <div class="cutover-gate-header">
+            <span class="gate-check">✓</span>
+            <h4>CDC Lag &lt; 5s</h4>
+          </div>
+          <p>Current lag: 2.3s (threshold: 5s)</p>
+          <span class="gate-approved">Auto-verified · Jun 12 15:42</span>
+        </div>
+        <div class="cutover-gate glass-card gate-passed">
+          <div class="cutover-gate-header">
+            <span class="gate-check">✓</span>
+            <h4>Validation Gates Green</h4>
+          </div>
+          <p>Structural, semantic, and code gates passed</p>
+          <span class="gate-approved">Auto-verified · Jun 12 14:30</span>
+        </div>
+        <div class="cutover-gate glass-card gate-pending">
+          <div class="cutover-gate-header">
+            <span class="gate-check pending-check">◌</span>
+            <h4>Fallback Plan Approved</h4>
+          </div>
+          <p>Rollback playbook not yet signed off</p>
+          <span class="gate-waiting">Waiting for approval</span>
+        </div>
+        <div class="cutover-gate glass-card gate-pending">
+          <div class="cutover-gate-header">
+            <span class="gate-check pending-check">◌</span>
+            <h4>Hypercare Team Ready</h4>
+          </div>
+          <p>On-call team confirmation pending</p>
+          <span class="gate-waiting">Waiting for confirmation</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- New Project Modal -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal glass-card" id="newProjectModal">
+      <div class="modal-header">
+        <h2>Connect Source &amp; Target</h2>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Project Name</label>
+          <input type="text" class="form-input" placeholder="e.g., CRM Database Migration">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Source Engine</label>
+            <select class="form-input">
+              <option>Oracle 19c</option>
+              <option>Oracle 12c</option>
+              <option>Oracle 11g</option>
+              <option>SQL Server 2019</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Target Engine</label>
+            <select class="form-input">
+              <option>PostgreSQL 16</option>
+              <option>PostgreSQL 15</option>
+              <option>Aurora PostgreSQL</option>
+              <option>Cloud SQL PostgreSQL</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-helper-banner">
+          Synqora should not assume direct SaaS database access. The normal model is: register endpoints in the control plane, then let a customer-side Synqora agent test and use those connections.
+        </div>
+        <div class="form-group">
+          <label>Migration Mode</label>
+          <div class="mode-cards">
+            <label class="mode-card">
+              <input type="radio" name="mode" value="assessment" checked>
+              <div class="mode-card-content">
+                <strong>Assessment Only</strong>
+                <span>Discover, analyze, and report</span>
+              </div>
+            </label>
+            <label class="mode-card">
+              <input type="radio" name="mode" value="factory">
+              <div class="mode-card-content">
+                <strong>Migration Factory</strong>
+                <span>Full migration without CDC</span>
+              </div>
+            </label>
+            <label class="mode-card">
+              <input type="radio" name="mode" value="cdc">
+              <div class="mode-card-content">
+                <strong>Migration + CDC</strong>
+                <span>Full migration with live replication</span>
+              </div>
+            </label>
+            <label class="mode-card">
+              <input type="radio" name="mode" value="replication">
+              <div class="mode-card-content">
+                <strong>Continuous Replication</strong>
+                <span>Ongoing sync for DR or reporting</span>
+              </div>
+            </label>
+          </div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-header">
+            <h3>Source Oracle Connection</h3>
+            <span class="status-badge running">Connect First</span>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Oracle Host</label>
+              <input type="text" class="form-input" placeholder="oraprod.company.net">
+            </div>
+            <div class="form-group">
+              <label>Listener Port</label>
+              <input type="text" class="form-input" placeholder="1521">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Service Name / SID</label>
+              <input type="text" class="form-input" placeholder="FINPROD or ORCL">
+            </div>
+            <div class="form-group">
+              <label>Source Schema Scope</label>
+              <input type="text" class="form-input" placeholder="FINANCE_CORE, HR_APP">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Discovery User</label>
+              <input type="text" class="form-input" placeholder="synqora_readonly">
+            </div>
+            <div class="form-group">
+              <label>Agent Network Zone</label>
+              <input type="text" class="form-input" placeholder="customer-onprem-east">
+            </div>
+          </div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-header">
+            <h3>Target PostgreSQL Connection</h3>
+            <span class="status-badge pending">Validate Before Deploy</span>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>PostgreSQL Host</label>
+              <input type="text" class="form-input" placeholder="pg-fin-prod.us-east-1.rds.amazonaws.com">
+            </div>
+            <div class="form-group">
+              <label>Port</label>
+              <input type="text" class="form-input" placeholder="5432">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Database Name</label>
+              <input type="text" class="form-input" placeholder="finance_migration">
+            </div>
+            <div class="form-group">
+              <label>Target Schema</label>
+              <input type="text" class="form-input" placeholder="finance_core">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Deployment User</label>
+              <input type="text" class="form-input" placeholder="synqora_deployer">
+            </div>
+            <div class="form-group">
+              <label>SSL / Connectivity Policy</label>
+              <input type="text" class="form-input" placeholder="require, private subnet, no public ingress">
+            </div>
+          </div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-header">
+            <h3>Connectivity Validation Plan</h3>
+            <span class="status-badge idle">Architectural Gate</span>
+          </div>
+          <ul class="connection-checklist compact">
+            <li>Test Oracle connectivity from the selected Synqora agent</li>
+            <li>Test PostgreSQL connectivity and deployment permissions</li>
+            <li>Persist only connection metadata in SaaS, not raw credentials</li>
+          </ul>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="closeModal()">Register Connections</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
