@@ -11,6 +11,138 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body class="auth-pending">
+  <section class="public-site" id="publicSite" aria-label="Synqora product homepage">
+    <header class="public-nav">
+      <a class="public-brand" href="#home" aria-label="Synqora home">
+        <span class="public-brand-mark">S</span>
+        <span>Synqora</span>
+      </a>
+      <nav class="public-links" aria-label="Product navigation">
+        <a href="#platform">Platform</a>
+        <a href="#workflow">Workflow</a>
+        <a href="#deployment">Deployment</a>
+        <a href="#security">Security</a>
+      </nav>
+      <div class="public-actions">
+        <button class="public-link-btn" type="button" data-open-auth="signin">Sign In</button>
+        <button class="public-cta small" type="button" data-open-auth="signup">Create Account</button>
+      </div>
+    </header>
+
+    <main class="public-main" id="home">
+      <section class="public-hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Oracle to PostgreSQL migration operating system</p>
+          <h1>Move complex databases with evidence, automation, and control.</h1>
+          <p class="hero-subtitle">Synqora coordinates assessment, conversion, data load, CDC, validation, and cutover from one SaaS control plane with customer-side agents.</p>
+          <div class="hero-actions">
+            <button class="public-cta" type="button" data-open-auth="signup">Start a workspace</button>
+            <button class="public-secondary" type="button" data-open-auth="signin">Open command center</button>
+          </div>
+          <div class="hero-proof">
+            <span>Source-first assessment</span>
+            <span>Agent-executed connectivity</span>
+            <span>PostgreSQL target optional until ready</span>
+          </div>
+        </div>
+        <div class="hero-visual" aria-hidden="true">
+          <div class="migration-orbit">
+            <div class="orbit-ring ring-one"></div>
+            <div class="orbit-ring ring-two"></div>
+            <div class="migration-node source-node">
+              <span>Oracle</span>
+              <strong>Source</strong>
+            </div>
+            <div class="migration-node agent-node">
+              <span>Synqora</span>
+              <strong>Agent</strong>
+            </div>
+            <div class="migration-node target-node">
+              <span>Postgres</span>
+              <strong>Target</strong>
+            </div>
+            <div class="migration-path path-one"></div>
+            <div class="migration-path path-two"></div>
+            <div class="signal-dot dot-one"></div>
+            <div class="signal-dot dot-two"></div>
+            <div class="signal-dot dot-three"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="public-strip" id="platform">
+        <span>One product</span>
+        <span>Many business units</span>
+        <span>Many Oracle sources</span>
+        <span>Many PostgreSQL targets</span>
+      </section>
+
+      <section class="public-section split">
+        <div>
+          <p class="section-kicker">Product model</p>
+          <h2>Built around the way enterprises actually migrate.</h2>
+        </div>
+        <div class="public-model">
+          <div>
+            <span>01</span>
+            <strong>Organization</strong>
+            <p>Tenant, SSO, roles, policy, audit, and shared guardrails.</p>
+          </div>
+          <div>
+            <span>02</span>
+            <strong>Business Unit</strong>
+            <p>Finance, HR, operations, or app portfolios with separate ownership.</p>
+          </div>
+          <div>
+            <span>03</span>
+            <strong>Migration Project</strong>
+            <p>Assessment, conversion, load, CDC, validation, cutover, and hypercare.</p>
+          </div>
+          <div>
+            <span>04</span>
+            <strong>Database Connections</strong>
+            <p>Reusable Oracle and PostgreSQL endpoint profiles validated by agents.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="public-section workflow" id="workflow">
+        <p class="section-kicker">Migration lifecycle</p>
+        <h2>From source discovery to governed cutover.</h2>
+        <div class="workflow-line">
+          <span>Connect</span>
+          <span>Discover</span>
+          <span>Assess</span>
+          <span>Convert</span>
+          <span>Load</span>
+          <span>CDC</span>
+          <span>Validate</span>
+          <span>Cutover</span>
+        </div>
+      </section>
+
+      <section class="public-section deployment" id="deployment">
+        <div class="deployment-copy">
+          <p class="section-kicker">Deployment model</p>
+          <h2>SaaS control plane. Customer-side execution plane.</h2>
+          <p>Synqora Cloud manages workflow, approvals, evidence, and reporting. Synqora Agents run near the databases, resolve customer-managed secrets, and execute the real work.</p>
+        </div>
+        <div class="deployment-ledger">
+          <div><span>Cloud</span><strong>Orchestration, state, reports, approvals</strong></div>
+          <div><span>Agent</span><strong>Connectivity, discovery, load, CDC, validation</strong></div>
+          <div><span>Database</span><strong>Oracle sources and PostgreSQL targets stay private</strong></div>
+        </div>
+      </section>
+
+      <section class="public-section final" id="security">
+        <p class="section-kicker">Enterprise-ready direction</p>
+        <h2>Start with assessment. Add targets when the evidence says where to go.</h2>
+        <p>No raw database passwords in SaaS. Source-only assessment supported. PostgreSQL target details become required when conversion, load, CDC, and validation begin.</p>
+        <button class="public-cta" type="button" data-open-auth="signup">Create your Synqora workspace</button>
+      </section>
+    </main>
+  </section>
+
   <section class="login-shell" id="loginShell" aria-label="Synqora sign in">
     <div class="login-ambient"></div>
     <div class="login-card">

@@ -55,6 +55,11 @@ async function initAuthSession() {
 }
 
 function initAuthHandlers() {
+  const authOpenButtons = document.querySelectorAll('[data-open-auth]');
+  authOpenButtons.forEach((button) => {
+    button.addEventListener('click', () => openAuthPanel(button.dataset.openAuth || 'signin'));
+  });
+
   const authTabs = document.querySelectorAll('.auth-tab[data-auth-mode]');
   authTabs.forEach((tab) => {
     tab.addEventListener('click', () => setAuthMode(tab.dataset.authMode || 'signin'));
@@ -95,6 +100,42 @@ function initAuthHandlers() {
       setLoggedOutView();
     });
   }
+
+  const loginShell = document.getElementById('loginShell');
+  if (loginShell) {
+    loginShell.addEventListener('click', (event) => {
+      if (event.target === loginShell) {
+        closeAuthPanel();
+      }
+    });
+  }
+
+  document.addEventListener('keydown', (event) => {
+    if (
+      event.key === 'Escape' &&
+      document.body.classList.contains('auth-open') &&
+      !document.body.classList.contains('authenticated')
+    ) {
+      closeAuthPanel();
+    }
+  });
+}
+
+function openAuthPanel(mode = 'signin') {
+  document.body.classList.add('auth-open');
+  setAuthMode(mode);
+
+  window.setTimeout(() => {
+    const focusTarget = mode === 'signup'
+      ? document.getElementById('signupEmail')
+      : document.getElementById('loginEmail');
+    if (focusTarget) focusTarget.focus();
+  }, 80);
+}
+
+function closeAuthPanel() {
+  if (document.body.classList.contains('authenticated')) return;
+  document.body.classList.remove('auth-open');
 }
 
 function setAuthMode(mode) {
@@ -202,18 +243,15 @@ async function submitSignup() {
 
 function setAuthenticatedSession(payload) {
   appState.session = payload;
-  document.body.classList.remove('auth-pending');
+  document.body.classList.remove('auth-pending', 'auth-open');
   document.body.classList.add('authenticated');
   renderSessionIdentity(payload);
 }
 
 function setLoggedOutView() {
   document.body.classList.remove('authenticated');
+  document.body.classList.remove('auth-open');
   document.body.classList.add('auth-pending');
-  const emailEl = document.getElementById('loginEmail');
-  if (emailEl && !emailEl.value) {
-    emailEl.focus();
-  }
 }
 
 function renderSessionIdentity(payload) {

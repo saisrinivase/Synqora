@@ -26,7 +26,7 @@ The repository now includes a runnable V1 scaffold:
 - `Synqora Agent`
   - a lightweight Node.js CLI for register / heartbeat / poll / run-once flows
 - `UI prototype`
-  - the existing dashboard served by the cloud service, with SaaS login, top-level stats hydrated from the API, enterprise workspace hierarchy, project creation, and separate database connection onboarding visible in the UX
+  - a public Synqora product homepage plus the signed-in migration command center served by the cloud service, with SaaS login, account creation, top-level stats hydrated from the API, enterprise workspace hierarchy, project creation, and separate database connection onboarding visible in the UX
 
 This is intentionally a thin implementation slice. It proves the product shape without locking us into a heavy framework too early.
 
@@ -142,6 +142,8 @@ Assessment should not require target details. The assessment phase should discov
 
 The working prototype now includes a local SaaS-style login boundary:
 
+- `Public product entry`
+  - unauthenticated users land on an original Synqora product page before opening sign in or account creation
 - `User login`
   - browser users authenticate through `Synqora Cloud`
 - `Create account`
