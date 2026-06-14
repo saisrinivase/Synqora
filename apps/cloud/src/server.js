@@ -222,10 +222,32 @@ const server = http.createServer(async (request, response) => {
       return sendJson(response, 200, { projects: await store.listProjects(request.synqoraUser) });
     }
 
+    if (request.method === 'POST' && url.pathname === '/api/v1/projects') {
+      const body = await readJsonBody(request);
+      return sendJson(response, 201, { project: await store.createProject(request.synqoraUser, body) });
+    }
+
+    if (request.method === 'POST' && url.pathname === '/api/v1/connections') {
+      const body = await readJsonBody(request);
+      return sendJson(response, 201, await store.createDatabaseConnection(request.synqoraUser, body));
+    }
+
     const projectOverviewMatch = url.pathname.match(/^\/api\/v1\/projects\/([^/]+)\/overview$/);
     if (request.method === 'GET' && projectOverviewMatch) {
       const [, projectId] = projectOverviewMatch;
       return sendJson(response, 200, await store.getProjectOverview(projectId, request.synqoraUser));
+    }
+
+    const assessmentStartMatch = url.pathname.match(/^\/api\/v1\/projects\/([^/]+)\/assessments\/oracle\/start$/);
+    if (request.method === 'POST' && assessmentStartMatch) {
+      const [, projectId] = assessmentStartMatch;
+      const body = await readJsonBody(request);
+      return sendJson(response, 201, {
+        assessment: await store.startOracleAssessment(request.synqoraUser, {
+          ...body,
+          projectId
+        })
+      });
     }
 
     if (request.method === 'GET' && url.pathname === '/api/v1/agents') {

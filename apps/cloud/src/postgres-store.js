@@ -302,6 +302,230 @@ export class SynqoraPostgresStore {
     };
   }
 
+  async createProject(context, input = {}) {
+    const tenantId = context?.tenant?.tenantId;
+    const userId = context?.user?.userId || null;
+    if (!tenantId) {
+      throw new Error('Tenant context is required');
+    }
+
+    const projectId = uuid();
+    const mode = this.#normalizeProjectMode(input.engagementMode || input.projectMode || 'assessment');
+    const projectCode = String(input.projectCode || '').trim();
+    const name = String(input.name || input.projectName || '').trim();
+
+    if (!projectCode || !name) {
+      throw new Error('Project code and project name are required');
+    }
+
+    await runSql(`
+      BEGIN;
+      INSERT INTO synqora_core.migration_project (
+        project_id, tenant_id, project_code, name, description, status, source_engine, target_engine,
+        engagement_mode, deployment_mode, owner_user_id, discovered_objects, conversion_rate_pct,
+        data_migrated_tb, critical_issues, warning_issues, pipeline_stage, created_at, updated_at
+      ) VALUES (
+        ${sqlString(projectId)}, ${sqlString(tenantId)}, ${sqlString(projectCode)}, ${sqlString(name)},
+        ${sqlString(String(input.description || input.primaryAssessmentGoal || 'Oracle source assessment project.').trim())},
+        'draft', 'oracle', 'not_selected', ${sqlString(mode)}, 'saas_standard', ${sqlNullable(userId)},
+        0, 0, 0, 0, 0, 'connectivity', now(), now()
+      );
+
+      INSERT INTO synqora_core.state_transition_event (
+        event_id, tenant_id, entity_type, entity_id, from_status, to_status, reason_code, details_json, occurred_at
+      ) VALUES (
+        ${sqlString(uuid())}, ${sqlString(tenantId)}, 'migration_project', ${sqlString(projectId)}, NULL, 'draft',
+        'project_created', ${sqlJson({ projectCode, engagementMode: mode })}, now()
+      );
+      COMMIT;
+    `);
+
+    const projects = await this.listProjects(context);
+    return projects.find((project) => project.projectId === projectId);
+  }
+
+  async createDatabaseConnection(context, input = {}) {
+    const tenantId = context?.tenant?.tenantId;
+    if (!tenantId) {
+      throw new Error('Tenant context is required');
+    }
+
+    const project = await this.#findTenantProject(input.projectId, tenantId);
+    const environmentId = uuid();
+    const role = String(input.connectionRole || 'source_assessment').trim();
+    const isSource = !role.startsWith('target');
+    const engine = String(input.engine || (isSource ? 'Oracle 19c' : 'PostgreSQL')).trim();
+    const host = String(input.host || '').trim();
+    const port = String(input.port || (isSource ? '1521' : '5432')).trim();
+    const serviceName = String(input.serviceName || '').trim();
+
+    if (!host || !serviceName) {
+      throw new Error('Host and service/database name are required');
+    }
+
+    const settingsJson = {
+      engineVersion: engine,
+      host: `${host}:${port}`,
+      hostName: host,
+      port,
+      serviceName,
+      schemaScope: this.#splitCsv(input.schemaScope),
+      credentialReference: String(input.credentialReference || '').trim(),
+      connectionRole: role,
+      validationMode: 'agent_executed',
+      storesRawPasswordInCloud: false
+    };
+
+    await runSql(`
+      BEGIN;
+      INSERT INTO synqora_core.environment (
+        environment_id, tenant_id, project_id, environment_name, environment_type, network_zone,
+        cloud_provider, region_name, status, settings_json, created_at, updated_at
+      ) VALUES (
+        ${sqlString(environmentId)}, ${sqlString(tenantId)}, ${sqlString(project.projectId)},
+        ${sqlString(String(input.connectionName || `${project.projectCode}-${isSource ? 'oracle-source' : 'postgres-target'}`).trim())},
+        ${sqlString(isSource ? 'source' : 'target')}, ${sqlNullable(String(input.agentNetworkZone || '').trim() || null)},
+        ${sqlString(String(input.cloudProvider || (isSource ? 'onprem' : 'unknown')).trim())},
+        ${sqlNullable(String(input.regionName || '').trim() || null)}, 'pending_validation',
+        ${sqlJson(settingsJson)}, now(), now()
+      );
+
+      UPDATE synqora_core.migration_project
+      SET status = 'connection_pending',
+          pipeline_stage = 'connectivity',
+          updated_at = now()
+      WHERE project_id = ${sqlString(project.projectId)};
+
+      INSERT INTO synqora_core.state_transition_event (
+        event_id, tenant_id, entity_type, entity_id, from_status, to_status, reason_code, details_json, occurred_at
+      ) VALUES (
+        ${sqlString(uuid())}, ${sqlString(tenantId)}, 'environment', ${sqlString(environmentId)}, NULL, 'pending_validation',
+        'connection_profile_created', ${sqlJson({ projectId: project.projectId, connectionRole: role })}, now()
+      );
+      COMMIT;
+    `);
+
+    const assessment = input.startAssessment
+      ? await this.startOracleAssessment(context, {
+          projectId: project.projectId,
+          sourceEnvironmentId: environmentId,
+          schemaScope: input.schemaScope
+        })
+      : null;
+
+    const connection = await this.#findEnvironment(environmentId);
+    const [updatedProject] = (await this.listProjects(context)).filter((item) => item.projectId === project.projectId);
+
+    return {
+      connection,
+      project: updatedProject,
+      assessment
+    };
+  }
+
+  async startOracleAssessment(context, input = {}) {
+    const tenantId = context?.tenant?.tenantId;
+    const userId = context?.user?.userId || null;
+    if (!tenantId) {
+      throw new Error('Tenant context is required');
+    }
+
+    const project = await this.#findTenantProject(input.projectId, tenantId);
+    const sourceEnvironment = input.sourceEnvironmentId
+      ? await this.#findEnvironment(input.sourceEnvironmentId)
+      : await runJsonObject(`
+          SELECT row_to_json(e)
+          FROM (
+            SELECT environment_id AS "environmentId",
+                   tenant_id AS "tenantId",
+                   project_id AS "projectId",
+                   environment_name AS "environmentName",
+                   environment_type AS "environmentType",
+                   network_zone AS "networkZone",
+                   cloud_provider AS "cloudProvider",
+                   region_name AS "regionName",
+                   status,
+                   settings_json AS "settingsJson",
+                   created_at AS "createdAt",
+                   updated_at AS "updatedAt"
+            FROM synqora_core.environment
+            WHERE project_id = ${sqlString(project.projectId)}
+              AND environment_type = 'source'
+            ORDER BY created_at DESC
+            LIMIT 1
+          ) e;
+        `);
+
+    if (!sourceEnvironment || sourceEnvironment.projectId !== project.projectId || sourceEnvironment.environmentType !== 'source') {
+      throw new Error('Create an Oracle source connection before starting assessment');
+    }
+
+    const workflowRunId = uuid();
+    const stepRunId = uuid();
+    const validationJobId = uuid();
+    const settings = sourceEnvironment.settingsJson || {};
+
+    await runSql(`
+      BEGIN;
+      INSERT INTO synqora_core.workflow_run (
+        workflow_run_id, tenant_id, project_id, workflow_type, status, trigger_mode, triggered_by_user_id,
+        started_at, created_at, updated_at
+      ) VALUES (
+        ${sqlString(workflowRunId)}, ${sqlString(tenantId)}, ${sqlString(project.projectId)}, 'oracle_assessment',
+        'queued', 'manual', ${sqlNullable(userId)}, now(), now(), now()
+      );
+
+      INSERT INTO synqora_core.workflow_step_run (
+        step_run_id, tenant_id, workflow_run_id, step_name, step_order, status, started_at, created_at, updated_at
+      ) VALUES (
+        ${sqlString(stepRunId)}, ${sqlString(tenantId)}, ${sqlString(workflowRunId)},
+        'Oracle Connection Validation and Assessment', 1, 'queued', now(), now(), now()
+      );
+
+      INSERT INTO synqora_core.job_run (
+        job_run_id, tenant_id, project_id, workflow_run_id, step_run_id, job_type, job_version, status, priority,
+        capability_required, payload_json, attempt_count, max_attempts, created_at, updated_at
+      ) VALUES (
+        ${sqlString(validationJobId)}, ${sqlString(tenantId)}, ${sqlString(project.projectId)}, ${sqlString(workflowRunId)},
+        ${sqlString(stepRunId)}, 'validate_oracle_connection', 'v1', 'queued', 'high',
+        ${sqlString(capabilityForJob('validate_oracle_connection'))},
+        ${sqlJson({
+          sourceEnvironmentId: sourceEnvironment.environmentId,
+          host: settings.host,
+          serviceName: settings.serviceName,
+          schemaScope: settings.schemaScope || this.#splitCsv(input.schemaScope),
+          credentialReference: settings.credentialReference,
+          validations: ['network_reachability', 'authentication_reference', 'least_privilege', 'dictionary_access']
+        })},
+        0, 3, now(), now()
+      );
+
+      UPDATE synqora_core.migration_project
+      SET status = 'assessment_queued',
+          pipeline_stage = 'connectivity',
+          updated_at = now()
+      WHERE project_id = ${sqlString(project.projectId)};
+
+      INSERT INTO synqora_core.state_transition_event (
+        event_id, tenant_id, entity_type, entity_id, from_status, to_status, reason_code, details_json, occurred_at
+      ) VALUES (
+        ${sqlString(uuid())}, ${sqlString(tenantId)}, 'workflow_run', ${sqlString(workflowRunId)}, NULL, 'queued',
+        'oracle_assessment_started', ${sqlJson({ projectId: project.projectId, sourceEnvironmentId: sourceEnvironment.environmentId })}, now()
+      );
+      COMMIT;
+    `);
+
+    const jobs = await this.listJobs(context);
+    const [updatedProject] = (await this.listProjects(context)).filter((item) => item.projectId === project.projectId);
+
+    return {
+      workflowRunId,
+      stepRunId,
+      jobs: jobs.filter((job) => job.workflowRunId === workflowRunId),
+      project: updatedProject
+    };
+  }
+
   async getProjectOverview(projectId, context = null) {
     const tenantId = context?.tenant?.tenantId;
     const project = await runJsonObject(`
@@ -811,6 +1035,7 @@ export class SynqoraPostgresStore {
 
   async #enqueueFollowUpJobs(completedJob) {
     const nextTypeMap = {
+      validate_oracle_connection: 'discover_source_inventory',
       discover_source_inventory: 'run_assessment_rules',
       run_assessment_rules: 'generate_conversion_artifacts',
       generate_conversion_artifacts: 'run_validation_check'
@@ -830,11 +1055,104 @@ export class SynqoraPostgresStore {
         ${sqlString(uuid())}, ${sqlString(completedJob.tenantId)}, ${sqlString(completedJob.projectId)},
         ${sqlString(completedJob.workflowRunId)}, ${sqlNullable(completedJob.stepRunId)}, ${sqlString(nextType)}, 'v1',
         'queued', ${sqlString(completedJob.priority)}, ${sqlString(capabilityForJob(nextType))},
-        ${sqlJson({ parentJobRunId: completedJob.jobRunId, projectId: completedJob.projectId })},
+        ${sqlJson({
+          parentJobRunId: completedJob.jobRunId,
+          projectId: completedJob.projectId,
+          sourceEnvironmentId: completedJob.payload?.sourceEnvironmentId,
+          schemaScope: completedJob.payload?.schemaScope || completedJob.payload?.sourceSchemaPatterns
+        })},
         0, 3, now(), now()
       );
       COMMIT;
     `);
+  }
+
+  #normalizeProjectMode(mode) {
+    switch (String(mode || '').toLowerCase()) {
+      case 'factory':
+      case 'migration_factory':
+        return 'migration_factory';
+      case 'cdc':
+      case 'migration_cdc':
+        return 'migration_cdc';
+      case 'replication':
+      case 'continuous_replication':
+        return 'continuous_replication';
+      case 'assessment':
+      default:
+        return 'assessment';
+    }
+  }
+
+  #splitCsv(value) {
+    return String(value || '')
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  async #findTenantProject(projectId, tenantId) {
+    const project = await runJsonObject(`
+      SELECT row_to_json(p)
+      FROM (
+        SELECT project_id AS "projectId",
+               tenant_id AS "tenantId",
+               project_code AS "projectCode",
+               name,
+               description,
+               status,
+               source_engine AS "sourceEngine",
+               target_engine AS "targetEngine",
+               engagement_mode AS "engagementMode",
+               deployment_mode AS "deploymentMode",
+               owner_user_id AS "ownerUserId",
+               discovered_objects AS "discoveredObjects",
+               conversion_rate_pct AS "conversionRatePct",
+               data_migrated_tb AS "dataMigratedTb",
+               critical_issues AS "criticalIssues",
+               warning_issues AS "warningIssues",
+               pipeline_stage AS "pipelineStage",
+               created_at AS "createdAt",
+               updated_at AS "updatedAt"
+        FROM synqora_core.migration_project
+        WHERE project_id = ${sqlString(projectId)}
+          AND tenant_id = ${sqlString(tenantId)}
+        LIMIT 1
+      ) p;
+    `);
+
+    if (!project) {
+      throw new Error('Project not found');
+    }
+    return project;
+  }
+
+  async #findEnvironment(environmentId) {
+    const environment = await runJsonObject(`
+      SELECT row_to_json(e)
+      FROM (
+        SELECT environment_id AS "environmentId",
+               tenant_id AS "tenantId",
+               project_id AS "projectId",
+               environment_name AS "environmentName",
+               environment_type AS "environmentType",
+               network_zone AS "networkZone",
+               cloud_provider AS "cloudProvider",
+               region_name AS "regionName",
+               status,
+               settings_json AS "settingsJson",
+               created_at AS "createdAt",
+               updated_at AS "updatedAt"
+        FROM synqora_core.environment
+        WHERE environment_id = ${sqlString(environmentId)}
+        LIMIT 1
+      ) e;
+    `);
+
+    if (!environment) {
+      throw new Error('Connection profile not found');
+    }
+    return environment;
   }
 
   async #findAgent(agentId) {
@@ -957,65 +1275,31 @@ export async function seedPostgresDemoData() {
         status = 'active',
         updated_at = now();
 
-    INSERT INTO synqora_core.migration_project (
-      project_id, tenant_id, project_code, name, description, status, source_engine, target_engine,
-      engagement_mode, deployment_mode, owner_user_id, discovered_objects, conversion_rate_pct,
-      data_migrated_tb, critical_issues, warning_issues, pipeline_stage, created_at, updated_at
-    ) VALUES
-    (
-      ${sqlString(ids.projectId)}, ${sqlString(ids.tenantId)}, 'FINPROD-001', 'ERP Core — FINPROD',
-      'Financial production database migration, validation, and CDC cutover.', 'in_progress', 'oracle', 'postgresql',
-      'migration_cdc', 'saas_standard', ${sqlString(ids.userId)}, 48723, 94, 2.4, 3, 14, 'data_load', now(), now()
-    ),
-    (
-      ${sqlString(ids.projectTwoId)}, ${sqlString(ids.tenantId)}, 'HRDW-002', 'HR Analytics Warehouse',
-      'Assessment-first modernization program with staged conversion.', 'assessment', 'oracle', 'not_selected',
-      'assessment', 'saas_standard', ${sqlString(ids.userId)}, 12984, 0, 0.0, 6, 33, 'assessment', now(), now()
-    )
-    ON CONFLICT (project_id) DO UPDATE
-    SET target_engine = CASE
-          WHEN synqora_core.migration_project.engagement_mode = 'assessment' THEN 'not_selected'
-          ELSE EXCLUDED.target_engine
-        END,
-        updated_at = now();
+    DELETE FROM synqora_core.job_checkpoint
+    WHERE job_run_id IN (
+      SELECT job_run_id
+      FROM synqora_core.job_run
+      WHERE project_id IN (${sqlString(ids.projectId)}, ${sqlString(ids.projectTwoId)})
+    );
 
-    INSERT INTO synqora_core.environment (
-      environment_id, tenant_id, project_id, environment_name, environment_type, network_zone, cloud_provider,
-      region_name, status, settings_json, created_at, updated_at
-    ) VALUES
-    (
-      ${sqlString(ids.sourceEnvId)}, ${sqlString(ids.tenantId)}, ${sqlString(ids.projectId)}, 'oracle-prod-east',
-      'source', 'customer-onprem-east', 'onprem', 'us-east-1', 'active',
-      ${sqlJson({
-        engineVersion: 'Oracle 19c EE',
-        host: 'oraprod-fin.internal:1521',
-        schemas: 4,
-        tables: 847,
-        packages: 312,
-        totalSizeTb: 1.8
-      })},
-      now(), now()
-    ),
-    (
-      ${sqlString(ids.targetEnvId)}, ${sqlString(ids.tenantId)}, ${sqlString(ids.projectId)}, 'postgres-cutover-east',
-      'target', 'customer-aws-east', 'aws', 'us-east-1', 'active',
-      ${sqlJson({
-        engineVersion: 'PostgreSQL 16.3',
-        host: 'pg-fin-prod.us-east-1.rds.amazonaws.com',
-        schemas: 4,
-        tablesDeployed: 847,
-        codeDeployed: 289,
-        totalSizeTb: 1.8
-      })},
-      now(), now()
-    )
-    ON CONFLICT (environment_id) DO UPDATE
-    SET network_zone = EXCLUDED.network_zone,
-        cloud_provider = EXCLUDED.cloud_provider,
-        region_name = EXCLUDED.region_name,
-        status = EXCLUDED.status,
-        settings_json = EXCLUDED.settings_json,
-        updated_at = now();
+    DELETE FROM synqora_core.job_run
+    WHERE project_id IN (${sqlString(ids.projectId)}, ${sqlString(ids.projectTwoId)});
+
+    DELETE FROM synqora_core.workflow_step_run
+    WHERE workflow_run_id IN (
+      SELECT workflow_run_id
+      FROM synqora_core.workflow_run
+      WHERE project_id IN (${sqlString(ids.projectId)}, ${sqlString(ids.projectTwoId)})
+    );
+
+    DELETE FROM synqora_core.workflow_run
+    WHERE project_id IN (${sqlString(ids.projectId)}, ${sqlString(ids.projectTwoId)});
+
+    DELETE FROM synqora_core.environment
+    WHERE project_id IN (${sqlString(ids.projectId)}, ${sqlString(ids.projectTwoId)});
+
+    DELETE FROM synqora_core.migration_project
+    WHERE project_id IN (${sqlString(ids.projectId)}, ${sqlString(ids.projectTwoId)});
 
     INSERT INTO synqora_core.agent_pool (
       agent_pool_id, tenant_id, pool_name, pool_type, region_name, status, capabilities_json, created_at, updated_at
@@ -1034,45 +1318,6 @@ export async function seedPostgresDemoData() {
     )
     ON CONFLICT (agent_registration_id) DO NOTHING;
 
-    INSERT INTO synqora_core.workflow_run (
-      workflow_run_id, tenant_id, project_id, workflow_type, status, trigger_mode, triggered_by_user_id, started_at, created_at, updated_at
-    ) VALUES (
-      ${sqlString(ids.workflowRunId)}, ${sqlString(ids.tenantId)}, ${sqlString(ids.projectId)},
-      'migration_cdc', 'running', 'manual', ${sqlString(ids.userId)}, now(), now(), now()
-    )
-    ON CONFLICT (workflow_run_id) DO NOTHING;
-
-    INSERT INTO synqora_core.workflow_step_run (
-      step_run_id, tenant_id, workflow_run_id, step_name, step_order, status, started_at, created_at, updated_at
-    ) VALUES (
-      ${sqlString(ids.stepRunId)}, ${sqlString(ids.tenantId)}, ${sqlString(ids.workflowRunId)},
-      'Discovery and Assessment', 1, 'running', now(), now(), now()
-    )
-    ON CONFLICT (step_run_id) DO NOTHING;
-
-    INSERT INTO synqora_core.job_run (
-      job_run_id, tenant_id, project_id, workflow_run_id, step_run_id, job_type, job_version, status, priority,
-      capability_required, payload_json, attempt_count, max_attempts, created_at, updated_at
-    ) VALUES
-    (
-      ${sqlString(ids.job1Id)}, ${sqlString(ids.tenantId)}, ${sqlString(ids.projectId)}, ${sqlString(ids.workflowRunId)},
-      ${sqlString(ids.stepRunId)}, 'discover_source_inventory', 'v1', 'queued', 'high', 'discovery',
-      ${sqlJson({ sourceEnvironmentId: ids.sourceEnvId, sourceSchemaPatterns: ['FINANCE_CORE', 'HR_APP'], discoveryDepth: 'full' })},
-      0, 3, now(), now()
-    ),
-    (
-      ${sqlString(ids.job2Id)}, ${sqlString(ids.tenantId)}, ${sqlString(ids.projectId)}, ${sqlString(ids.workflowRunId)},
-      ${sqlString(ids.stepRunId)}, 'bulk_load_table_chunk', 'v1', 'queued', 'medium', 'bulk_load',
-      ${sqlJson({ sourceTable: 'FINANCE_CORE.TRANSACTIONS', targetTable: 'finance_core.transactions', chunkKeyStart: 1, chunkKeyEnd: 250000 })},
-      0, 5, now(), now()
-    ),
-    (
-      ${sqlString(ids.job3Id)}, ${sqlString(ids.tenantId)}, ${sqlString(ids.projectId)}, ${sqlString(ids.workflowRunId)},
-      ${sqlString(ids.stepRunId)}, 'start_cdc_stream', 'v1', 'queued', 'medium', 'cdc_capture',
-      ${sqlJson({ sourceEnvironmentId: ids.sourceEnvId, targetEnvironmentId: ids.targetEnvId, streamMode: 'migration_cdc' })},
-      0, 3, now(), now()
-    )
-    ON CONFLICT (job_run_id) DO NOTHING;
     COMMIT;
   `);
 }

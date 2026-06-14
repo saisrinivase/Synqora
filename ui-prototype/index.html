@@ -741,6 +741,7 @@
         </div>
         <div class="header-actions">
           <button class="btn btn-ghost">Export Report</button>
+          <button class="btn btn-ghost" data-open-modal="database-connection">Add Source Connection</button>
           <button class="btn btn-primary">Run Next Phase</button>
         </div>
       </div>
@@ -1726,11 +1727,11 @@
         <div class="form-row">
           <div class="form-group">
             <label>Organization</label>
-            <input type="text" class="form-input" value="Synqora Demo Tenant" readonly>
+            <input type="text" class="form-input" id="projectOrganization" value="Synqora Demo Tenant" readonly>
           </div>
           <div class="form-group">
             <label>Business Unit</label>
-            <select class="form-input">
+            <select class="form-input" id="projectBusinessUnit">
               <option>Finance</option>
               <option>Human Resources</option>
               <option>Supply Chain</option>
@@ -1742,21 +1743,21 @@
         <div class="form-row">
           <div class="form-group">
             <label>Project Code</label>
-            <input type="text" class="form-input" placeholder="FIN-ERP-001">
+            <input type="text" class="form-input" id="projectCodeInput" placeholder="FIN-ERP-001">
           </div>
           <div class="form-group">
             <label>Project Name</label>
-            <input type="text" class="form-input" placeholder="ERP Core Modernization">
+            <input type="text" class="form-input" id="projectNameInput" placeholder="ERP Core Modernization">
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
             <label>Application / System Owner</label>
-            <input type="text" class="form-input" placeholder="Finance Applications">
+            <input type="text" class="form-input" id="projectOwnerInput" placeholder="Finance Applications">
           </div>
           <div class="form-group">
             <label>Business Criticality</label>
-            <select class="form-input">
+            <select class="form-input" id="projectCriticalityInput">
               <option>Tier 1 - Mission Critical</option>
               <option>Tier 2 - Business Critical</option>
               <option>Tier 3 - Standard</option>
@@ -1811,28 +1812,28 @@
               </select>
             </div>
             <div class="form-group">
-              <label>Initial Source Database</label>
-              <input type="text" class="form-input" placeholder="FINPROD Oracle 19c">
+            <label>Initial Source Database</label>
+              <input type="text" class="form-input" id="projectInitialSourceInput" placeholder="FINPROD Oracle 19c">
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label>Schema / Application Scope</label>
-              <input type="text" class="form-input" placeholder="FINANCE_CORE, PAYABLES, RECEIVABLES">
+            <label>Schema / Application Scope</label>
+              <input type="text" class="form-input" id="projectSchemaScopeInput" placeholder="FINANCE_CORE, PAYABLES, RECEIVABLES">
             </div>
             <div class="form-group">
-              <label>Planned Start Window</label>
-              <input type="text" class="form-input" placeholder="Q3 assessment wave">
+            <label>Planned Start Window</label>
+              <input type="text" class="form-input" id="projectStartWindowInput" placeholder="Q3 assessment wave">
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label>Primary Assessment Goal</label>
-              <input type="text" class="form-input" placeholder="Complexity, effort, risk, and target recommendation">
+            <label>Primary Assessment Goal</label>
+              <input type="text" class="form-input" id="projectAssessmentGoalInput" placeholder="Complexity, effort, risk, and target recommendation">
             </div>
             <div class="form-group">
-              <label>Preferred Agent Zone</label>
-              <input type="text" class="form-input" placeholder="customer-onprem-east">
+            <label>Preferred Agent Zone</label>
+              <input type="text" class="form-input" id="projectAgentZoneInput" placeholder="customer-onprem-east">
             </div>
           </div>
         </div>
@@ -1861,7 +1862,7 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-        <button class="btn btn-primary" onclick="closeModal()">Create Project</button>
+        <button class="btn btn-primary" id="createProjectSubmit" type="button">Create Project</button>
       </div>
     </div>
   </div>
@@ -1880,7 +1881,7 @@
         <div class="form-row">
           <div class="form-group">
             <label>Business Unit</label>
-            <select class="form-input">
+            <select class="form-input" id="connectionBusinessUnit">
               <option>Finance</option>
               <option>Human Resources</option>
               <option>Supply Chain</option>
@@ -1889,31 +1890,29 @@
           </div>
           <div class="form-group">
             <label>Attach To Project</label>
-            <select class="form-input">
-              <option>ERP Core - FINPROD</option>
-              <option>HR Analytics Warehouse</option>
-              <option>Reusable portfolio connection</option>
+            <select class="form-input" id="connectionProjectSelect">
+              <option value="">Create a project first</option>
             </select>
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
             <label>Connection Role</label>
-            <select class="form-input">
-              <option>Source - Oracle assessment/discovery</option>
-              <option>Source - Oracle CDC capture</option>
-              <option>Target - PostgreSQL deployment/load</option>
-              <option>Target - PostgreSQL validation</option>
+            <select class="form-input" id="connectionRoleInput">
+              <option value="source_assessment">Source - Oracle assessment/discovery</option>
+              <option value="source_cdc">Source - Oracle CDC capture</option>
+              <option value="target_deployment">Target - PostgreSQL deployment/load</option>
+              <option value="target_validation">Target - PostgreSQL validation</option>
             </select>
           </div>
           <div class="form-group">
             <label>Database Engine</label>
-            <select class="form-input">
-              <option>Oracle 19c</option>
-              <option>Oracle 12c</option>
-              <option>PostgreSQL 16</option>
-              <option>Aurora PostgreSQL</option>
-              <option>Cloud SQL PostgreSQL</option>
+            <select class="form-input" id="connectionEngineInput">
+              <option value="Oracle 19c">Oracle 19c</option>
+              <option value="Oracle 12c">Oracle 12c</option>
+              <option value="PostgreSQL 16">PostgreSQL 16</option>
+              <option value="Aurora PostgreSQL">Aurora PostgreSQL</option>
+              <option value="Cloud SQL PostgreSQL">Cloud SQL PostgreSQL</option>
             </select>
           </div>
         </div>
@@ -1924,32 +1923,32 @@
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label>Host</label>
-              <input type="text" class="form-input" placeholder="oraprod.company.net">
+            <label>Host</label>
+              <input type="text" class="form-input" id="connectionHostInput" placeholder="oraprod.company.net">
             </div>
             <div class="form-group">
-              <label>Port</label>
-              <input type="text" class="form-input" placeholder="1521 or 5432">
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Service / Database Name</label>
-              <input type="text" class="form-input" placeholder="FINPROD or finance_migration">
-            </div>
-            <div class="form-group">
-              <label>Schema Scope</label>
-              <input type="text" class="form-input" placeholder="FINANCE_CORE, HR_APP">
+            <label>Port</label>
+              <input type="text" class="form-input" id="connectionPortInput" placeholder="1521 or 5432">
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label>Credential Reference</label>
-              <input type="text" class="form-input" placeholder="vault://finance/oracle/readonly">
+            <label>Service / Database Name</label>
+              <input type="text" class="form-input" id="connectionServiceInput" placeholder="FINPROD or finance_migration">
             </div>
             <div class="form-group">
-              <label>Agent Network Zone</label>
-              <input type="text" class="form-input" placeholder="customer-onprem-east">
+            <label>Schema Scope</label>
+              <input type="text" class="form-input" id="connectionSchemaScopeInput" placeholder="FINANCE_CORE, HR_APP">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+            <label>Credential Reference</label>
+              <input type="text" class="form-input" id="connectionCredentialInput" placeholder="vault://finance/oracle/readonly">
+            </div>
+            <div class="form-group">
+            <label>Agent Network Zone</label>
+              <input type="text" class="form-input" id="connectionAgentZoneInput" placeholder="customer-onprem-east">
             </div>
           </div>
         </div>
@@ -1967,7 +1966,7 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-ghost" onclick="closeConnectionModal()">Cancel</button>
-        <button class="btn btn-primary" onclick="closeConnectionModal()">Create Connection Profile</button>
+        <button class="btn btn-primary" id="createConnectionSubmit" type="button">Create Connection & Queue Assessment</button>
       </div>
     </div>
   </div>

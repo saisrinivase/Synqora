@@ -325,10 +325,15 @@ async function initDashboardApi() {
     }
 
     renderDashboardProjects(payload.projects || []);
+    renderConnectionProjectOptions(payload.projects || []);
+    renderWorkspaceLabels(payload.tenant || {});
 
     const defaultProjectId = appState.selectedProjectId || payload.projects?.[0]?.projectId;
     if (defaultProjectId) {
       await loadProjectOverview(defaultProjectId);
+    } else {
+      appState.selectedProjectId = null;
+      appState.selectedProjectOverview = null;
     }
   } catch (error) {
     console.warn('Synqora dashboard bootstrap failed:', error);
@@ -430,11 +435,38 @@ function renderDashboardProjects(projects) {
   const visibleProjects = projects.filter((project) => projectMatchesFilter(project, appState.activeProjectFilter));
 
   if (visibleProjects.length === 0) {
-    grid.innerHTML = '<div class="glass-card empty-state">No projects match the current filter.</div>';
+    grid.innerHTML = '<div class="glass-card empty-state">No migration projects yet. Create a project, then attach an Oracle source connection to start assessment.</div>';
     return;
   }
 
   grid.innerHTML = visibleProjects.map(createProjectCardMarkup).join('');
+}
+
+function renderConnectionProjectOptions(projects) {
+  const select = document.getElementById('connectionProjectSelect');
+  if (!select) return;
+
+  if (!projects.length) {
+    select.innerHTML = '<option value="">Create a project first</option>';
+    select.disabled = true;
+    return;
+  }
+
+  select.disabled = false;
+  select.innerHTML = projects
+    .map((project) => `<option value="${escapeHtml(project.projectId)}">${escapeHtml(project.projectCode || project.name)} - ${escapeHtml(project.name || 'Project')}</option>`)
+    .join('');
+
+  if (appState.selectedProjectId && projects.some((project) => project.projectId === appState.selectedProjectId)) {
+    select.value = appState.selectedProjectId;
+  }
+}
+
+function renderWorkspaceLabels(tenant) {
+  const projectOrg = document.getElementById('projectOrganization');
+  if (projectOrg) {
+    projectOrg.value = tenant.name || 'Synqora Tenant';
+  }
 }
 
 function projectMatchesFilter(project, filterValue) {
@@ -442,7 +474,7 @@ function projectMatchesFilter(project, filterValue) {
     case 'in_progress':
       return project.status === 'in_progress';
     case 'assessment':
-      return project.status === 'assessment' || project.pipelineStage === 'assessment';
+      return project.status === 'assessment' || project.status === 'assessment_queued' || project.pipelineStage === 'assessment';
     case 'cutover_ready':
       return project.pipelineStage === 'cutover' || project.status === 'completed' || project.status === 'cutover_ready';
     case 'all':
@@ -1191,6 +1223,16 @@ function initModalHandlers() {
     });
   }
 
+  const createProjectSubmit = document.getElementById('createProjectSubmit');
+  if (createProjectSubmit) {
+    createProjectSubmit.addEventListener('click', submitProjectCreate);
+  }
+
+  const createConnectionSubmit = document.getElementById('createConnectionSubmit');
+  if (createConnectionSubmit) {
+    createConnectionSubmit.addEventListener('click', submitConnectionCreate);
+  }
+
   // Escape key
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
@@ -1208,6 +1250,100 @@ function closeModal() {
 function closeConnectionModal() {
   const overlay = document.getElementById('connectionModalOverlay');
   if (overlay) overlay.classList.remove('visible');
+}
+
+async function submitProjectCreate() {
+  const submitBtn = document.getElementById('createProjectSubmit');
+  if (submitBtn) submitBtn.disabled = true;
+
+  try {
+    const body = {
+      businessUnit: getInputValue('projectBusinessUnit'),
+      projectCode: getInputValue('projectCodeInput'),
+      name: getInputValue('projectNameInput'),
+      applicationOwner: getInputValue('projectOwnerInput'),
+      businessCriticality: getInputValue('projectCriticalityInput'),
+      engagementMode: document.querySelector('input[name="mode"]:checked')?.value || 'assessment',
+      initialSourceDatabase: getInputValue('projectInitialSourceInput'),
+      schemaScope: getInputValue('projectSchemaScopeInput'),
+      plannedStartWindow: getInputValue('projectStartWindowInput'),
+      primaryAssessmentGoal: getInputValue('projectAssessmentGoalInput'),
+      preferredAgentZone: getInputValue('projectAgentZoneInput')
+    };
+
+    if (!body.projectCode || !body.name) {
+      throw new Error('Project code and project name are required');
+    }
+
+    const response = await apiFetch('/api/v1/projects', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload.error || 'Unable to create project');
+    }
+
+    appState.selectedProjectId = payload.project.projectId;
+    closeModal();
+    await initDashboardApi();
+    await loadProjectOverview(payload.project.projectId, { navigate: true });
+  } catch (error) {
+    window.alert(error.message || 'Unable to create project');
+  } finally {
+    if (submitBtn) submitBtn.disabled = false;
+  }
+}
+
+async function submitConnectionCreate() {
+  const submitBtn = document.getElementById('createConnectionSubmit');
+  if (submitBtn) submitBtn.disabled = true;
+
+  try {
+    const projectId = getInputValue('connectionProjectSelect') || appState.selectedProjectId;
+    if (!projectId) {
+      throw new Error('Create and select a project before creating a database connection');
+    }
+
+    const body = {
+      projectId,
+      businessUnit: getInputValue('connectionBusinessUnit'),
+      connectionRole: getInputValue('connectionRoleInput'),
+      engine: getInputValue('connectionEngineInput'),
+      host: getInputValue('connectionHostInput'),
+      port: getInputValue('connectionPortInput'),
+      serviceName: getInputValue('connectionServiceInput'),
+      schemaScope: getInputValue('connectionSchemaScopeInput'),
+      credentialReference: getInputValue('connectionCredentialInput'),
+      agentNetworkZone: getInputValue('connectionAgentZoneInput'),
+      startAssessment: true
+    };
+
+    const response = await apiFetch('/api/v1/connections', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload.error || 'Unable to create connection');
+    }
+
+    appState.selectedProjectId = payload.project.projectId;
+    closeConnectionModal();
+    await initDashboardApi();
+    await loadProjectOverview(payload.project.projectId, { navigate: true });
+  } catch (error) {
+    window.alert(error.message || 'Unable to create connection');
+  } finally {
+    if (submitBtn) submitBtn.disabled = false;
+  }
+}
+
+function getInputValue(id) {
+  const element = document.getElementById(id);
+  return String(element?.value || '').trim();
 }
 
 // ---- Filter Handlers ----

@@ -81,6 +81,8 @@ export function priorityRank(priority) {
 
 export function capabilityForJob(jobType) {
   switch (jobType) {
+    case 'validate_oracle_connection':
+      return 'connectivity';
     case 'discover_source_inventory':
       return 'discovery';
     case 'run_assessment_rules':

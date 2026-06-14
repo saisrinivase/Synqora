@@ -26,18 +26,8 @@ export class SynqoraStore {
     const seededAt = nowIso();
     const tenantId = crypto.randomUUID();
     const userId = crypto.randomUUID();
-    const projectId = crypto.randomUUID();
-    const projectTwoId = crypto.randomUUID();
-    const sourceEnvId = crypto.randomUUID();
-    const targetEnvId = crypto.randomUUID();
     const agentPoolId = crypto.randomUUID();
     const registrationId = crypto.randomUUID();
-    const workflowRunId = crypto.randomUUID();
-    const stepRunId = crypto.randomUUID();
-
-    const job1Id = crypto.randomUUID();
-    const job2Id = crypto.randomUUID();
-    const job3Id = crypto.randomUUID();
     const demoPassword = createPasswordRecord(DEMO_LOGIN_PASSWORD);
 
     return {
@@ -61,94 +51,8 @@ export class SynqoraStore {
           updatedAt: seededAt
         }
       ],
-      projects: [
-        {
-          projectId,
-          tenantId,
-          projectCode: 'FINPROD-001',
-          name: 'ERP Core — FINPROD',
-          description: 'Financial production database migration, validation, and CDC cutover.',
-          status: 'in_progress',
-          sourceEngine: 'oracle',
-          targetEngine: 'postgresql',
-          engagementMode: 'migration_cdc',
-          deploymentMode: 'saas_standard',
-          ownerUserId: userId,
-          discoveredObjects: 48723,
-          conversionRatePct: 94,
-          dataMigratedTb: 2.4,
-          criticalIssues: 3,
-          warningIssues: 14,
-          pipelineStage: 'data_load',
-          createdAt: seededAt,
-          updatedAt: seededAt
-        },
-        {
-          projectId: projectTwoId,
-          tenantId,
-          projectCode: 'HRDW-002',
-          name: 'HR Analytics Warehouse',
-          description: 'Assessment-first modernization program with staged conversion.',
-          status: 'assessment',
-          sourceEngine: 'oracle',
-          targetEngine: 'not_selected',
-          engagementMode: 'assessment',
-          deploymentMode: 'saas_standard',
-          ownerUserId: userId,
-          discoveredObjects: 12984,
-          conversionRatePct: 0,
-          dataMigratedTb: 0,
-          criticalIssues: 6,
-          warningIssues: 33,
-          pipelineStage: 'assessment',
-          createdAt: seededAt,
-          updatedAt: seededAt
-        }
-      ],
-      environments: [
-        {
-          environmentId: sourceEnvId,
-          tenantId,
-          projectId,
-          environmentName: 'oracle-prod-east',
-          environmentType: 'source',
-          status: 'active',
-          cloudProvider: 'onprem',
-          regionName: 'us-east-1',
-          networkZone: 'customer-onprem-east',
-          settingsJson: {
-            engineVersion: 'Oracle 19c EE',
-            host: 'oraprod-fin.internal:1521',
-            schemas: 4,
-            tables: 847,
-            packages: 312,
-            totalSizeTb: 1.8
-          },
-          createdAt: seededAt,
-          updatedAt: seededAt
-        },
-        {
-          environmentId: targetEnvId,
-          tenantId,
-          projectId,
-          environmentName: 'postgres-cutover-east',
-          environmentType: 'target',
-          status: 'active',
-          cloudProvider: 'aws',
-          regionName: 'us-east-1',
-          networkZone: 'customer-aws-east',
-          settingsJson: {
-            engineVersion: 'PostgreSQL 16.3',
-            host: 'pg-fin-prod.us-east-1.rds.amazonaws.com',
-            schemas: 4,
-            tablesDeployed: 847,
-            codeDeployed: 289,
-            totalSizeTb: 1.8
-          },
-          createdAt: seededAt,
-          updatedAt: seededAt
-        }
-      ],
+      projects: [],
+      environments: [],
       agentPools: [
         {
           agentPoolId,
@@ -207,103 +111,9 @@ export class SynqoraStore {
           updatedAt: seededAt
         }
       ],
-      workflows: [
-        {
-          workflowRunId,
-          tenantId,
-          projectId,
-          workflowType: 'migration_cdc',
-          status: 'running',
-          startedAt: seededAt,
-          createdAt: seededAt,
-          updatedAt: seededAt
-        }
-      ],
-      workflowSteps: [
-        {
-          stepRunId,
-          tenantId,
-          workflowRunId,
-          stepName: 'Discovery and Assessment',
-          stepOrder: 1,
-          status: 'running',
-          startedAt: seededAt,
-          createdAt: seededAt,
-          updatedAt: seededAt
-        }
-      ],
-      jobs: [
-        {
-          jobRunId: job1Id,
-          tenantId,
-          projectId,
-          workflowRunId,
-          stepRunId,
-          jobType: 'discover_source_inventory',
-          jobVersion: 'v1',
-          status: 'queued',
-          priority: 'high',
-          capabilityRequired: capabilityForJob('discover_source_inventory'),
-          leaseExpiresAt: null,
-          leasedToAgentId: null,
-          attemptCount: 0,
-          maxAttempts: 3,
-          payload: {
-            sourceEnvironmentId: sourceEnvId,
-            sourceSchemaPatterns: ['FINANCE_CORE', 'HR_APP'],
-            discoveryDepth: 'full'
-          },
-          createdAt: seededAt,
-          updatedAt: seededAt
-        },
-        {
-          jobRunId: job2Id,
-          tenantId,
-          projectId,
-          workflowRunId,
-          stepRunId,
-          jobType: 'bulk_load_table_chunk',
-          jobVersion: 'v1',
-          status: 'queued',
-          priority: 'medium',
-          capabilityRequired: capabilityForJob('bulk_load_table_chunk'),
-          leaseExpiresAt: null,
-          leasedToAgentId: null,
-          attemptCount: 0,
-          maxAttempts: 5,
-          payload: {
-            sourceTable: 'FINANCE_CORE.TRANSACTIONS',
-            targetTable: 'finance_core.transactions',
-            chunkKeyStart: 1,
-            chunkKeyEnd: 250000
-          },
-          createdAt: seededAt,
-          updatedAt: seededAt
-        },
-        {
-          jobRunId: job3Id,
-          tenantId,
-          projectId,
-          workflowRunId,
-          stepRunId,
-          jobType: 'start_cdc_stream',
-          jobVersion: 'v1',
-          status: 'queued',
-          priority: 'medium',
-          capabilityRequired: capabilityForJob('start_cdc_stream'),
-          leaseExpiresAt: null,
-          leasedToAgentId: null,
-          attemptCount: 0,
-          maxAttempts: 3,
-          payload: {
-            sourceEnvironmentId: sourceEnvId,
-            targetEnvironmentId: targetEnvId,
-            streamMode: 'migration_cdc'
-          },
-          createdAt: seededAt,
-          updatedAt: seededAt
-        }
-      ],
+      workflows: [],
+      workflowSteps: [],
+      jobs: [],
       checkpoints: [],
       transitions: []
     };
@@ -473,6 +283,216 @@ export class SynqoraStore {
     });
   }
 
+  createProject(context, input = {}) {
+    const tenant = this.#tenantForContext(context);
+    const user = context?.user || {};
+    const timestamp = nowIso();
+    const projectId = crypto.randomUUID();
+    const mode = this.#normalizeProjectMode(input.engagementMode || input.projectMode || 'assessment');
+    const projectCode = String(input.projectCode || '').trim();
+    const name = String(input.name || input.projectName || '').trim();
+
+    if (!projectCode || !name) {
+      throw new Error('Project code and project name are required');
+    }
+
+    const project = {
+      projectId,
+      tenantId: tenant.tenantId,
+      projectCode,
+      name,
+      description: String(input.description || input.primaryAssessmentGoal || 'Oracle source assessment project.').trim(),
+      status: 'draft',
+      sourceEngine: 'oracle',
+      targetEngine: 'not_selected',
+      engagementMode: mode,
+      deploymentMode: 'saas_standard',
+      ownerUserId: user.userId || null,
+      discoveredObjects: 0,
+      conversionRatePct: 0,
+      dataMigratedTb: 0,
+      criticalIssues: 0,
+      warningIssues: 0,
+      pipelineStage: 'connectivity',
+      businessUnit: String(input.businessUnit || 'Unassigned').trim(),
+      applicationOwner: String(input.applicationOwner || '').trim(),
+      businessCriticality: String(input.businessCriticality || '').trim(),
+      schemaScope: String(input.schemaScope || '').trim(),
+      preferredAgentZone: String(input.preferredAgentZone || '').trim(),
+      createdAt: timestamp,
+      updatedAt: timestamp
+    };
+
+    this.state.projects.push(project);
+    this.#recordTransition('migration_project', projectId, null, 'draft', 'project_created', {
+      projectCode,
+      engagementMode: mode
+    });
+
+    return deepClone(project);
+  }
+
+  createDatabaseConnection(context, input = {}) {
+    const tenant = this.#tenantForContext(context);
+    const project = this.#findTenantProject(input.projectId, tenant.tenantId);
+    const timestamp = nowIso();
+    const environmentId = crypto.randomUUID();
+    const role = String(input.connectionRole || 'source_assessment').trim();
+    const isSource = !role.startsWith('target');
+    const engine = String(input.engine || (isSource ? 'Oracle 19c' : 'PostgreSQL')).trim();
+    const host = String(input.host || '').trim();
+    const port = String(input.port || (isSource ? '1521' : '5432')).trim();
+    const serviceName = String(input.serviceName || '').trim();
+
+    if (!host || !serviceName) {
+      throw new Error('Host and service/database name are required');
+    }
+
+    const environment = {
+      environmentId,
+      tenantId: tenant.tenantId,
+      projectId: project.projectId,
+      environmentName: String(input.connectionName || `${project.projectCode}-${isSource ? 'oracle-source' : 'postgres-target'}`).trim(),
+      environmentType: isSource ? 'source' : 'target',
+      status: 'pending_validation',
+      cloudProvider: String(input.cloudProvider || (isSource ? 'onprem' : 'unknown')).trim(),
+      regionName: String(input.regionName || '').trim(),
+      networkZone: String(input.agentNetworkZone || input.preferredAgentZone || '').trim(),
+      settingsJson: {
+        engineVersion: engine,
+        host: `${host}:${port}`,
+        hostName: host,
+        port,
+        serviceName,
+        schemaScope: this.#splitCsv(input.schemaScope),
+        credentialReference: String(input.credentialReference || '').trim(),
+        connectionRole: role,
+        validationMode: 'agent_executed',
+        storesRawPasswordInCloud: false
+      },
+      createdAt: timestamp,
+      updatedAt: timestamp
+    };
+
+    this.state.environments.push(environment);
+    project.status = 'connection_pending';
+    project.pipelineStage = 'connectivity';
+    project.updatedAt = timestamp;
+
+    this.#recordTransition('environment', environmentId, null, 'pending_validation', 'connection_profile_created', {
+      projectId: project.projectId,
+      connectionRole: role
+    });
+
+    const assessment = input.startAssessment
+      ? this.startOracleAssessment(context, {
+          projectId: project.projectId,
+          sourceEnvironmentId: environmentId,
+          schemaScope: input.schemaScope
+        })
+      : null;
+
+    return deepClone({
+      connection: environment,
+      project,
+      assessment
+    });
+  }
+
+  startOracleAssessment(context, input = {}) {
+    const tenant = this.#tenantForContext(context);
+    const user = context?.user || {};
+    const project = this.#findTenantProject(input.projectId, tenant.tenantId);
+    const sourceEnvironment =
+      this.state.environments.find(
+        (environment) =>
+          environment.environmentId === input.sourceEnvironmentId &&
+          environment.projectId === project.projectId &&
+          environment.environmentType === 'source'
+      ) ||
+      this.state.environments.find(
+        (environment) => environment.projectId === project.projectId && environment.environmentType === 'source'
+      );
+
+    if (!sourceEnvironment) {
+      throw new Error('Create an Oracle source connection before starting assessment');
+    }
+
+    const timestamp = nowIso();
+    const workflowRunId = crypto.randomUUID();
+    const stepRunId = crypto.randomUUID();
+    const validationJobId = crypto.randomUUID();
+
+    this.state.workflows.push({
+      workflowRunId,
+      tenantId: tenant.tenantId,
+      projectId: project.projectId,
+      workflowType: 'oracle_assessment',
+      status: 'queued',
+      triggerMode: 'manual',
+      triggeredByUserId: user.userId || null,
+      startedAt: timestamp,
+      createdAt: timestamp,
+      updatedAt: timestamp
+    });
+
+    this.state.workflowSteps.push({
+      stepRunId,
+      tenantId: tenant.tenantId,
+      workflowRunId,
+      stepName: 'Oracle Connection Validation and Assessment',
+      stepOrder: 1,
+      status: 'queued',
+      startedAt: timestamp,
+      createdAt: timestamp,
+      updatedAt: timestamp
+    });
+
+    const validationJob = {
+      jobRunId: validationJobId,
+      tenantId: tenant.tenantId,
+      projectId: project.projectId,
+      workflowRunId,
+      stepRunId,
+      jobType: 'validate_oracle_connection',
+      jobVersion: 'v1',
+      status: 'queued',
+      priority: 'high',
+      capabilityRequired: capabilityForJob('validate_oracle_connection'),
+      leaseExpiresAt: null,
+      leasedToAgentId: null,
+      attemptCount: 0,
+      maxAttempts: 3,
+      payload: {
+        sourceEnvironmentId: sourceEnvironment.environmentId,
+        host: sourceEnvironment.settingsJson?.host,
+        serviceName: sourceEnvironment.settingsJson?.serviceName,
+        schemaScope: sourceEnvironment.settingsJson?.schemaScope || this.#splitCsv(input.schemaScope),
+        credentialReference: sourceEnvironment.settingsJson?.credentialReference,
+        validations: ['network_reachability', 'authentication_reference', 'least_privilege', 'dictionary_access']
+      },
+      createdAt: timestamp,
+      updatedAt: timestamp
+    };
+
+    this.state.jobs.push(validationJob);
+    project.status = 'assessment_queued';
+    project.pipelineStage = 'connectivity';
+    project.updatedAt = timestamp;
+
+    this.#recordTransition('workflow_run', workflowRunId, null, 'queued', 'oracle_assessment_started', {
+      projectId: project.projectId,
+      sourceEnvironmentId: sourceEnvironment.environmentId
+    });
+
+    return deepClone({
+      workflowRunId,
+      stepRunId,
+      jobs: [validationJob],
+      project
+    });
+  }
+
   getProjectOverview(projectId, context = null) {
     const tenant = this.#tenantForContext(context);
     const project = this.state.projects.find((item) => item.projectId === projectId);
@@ -495,6 +515,38 @@ export class SynqoraStore {
         agents: this.state.agentInstances
       })
     );
+  }
+
+  #normalizeProjectMode(mode) {
+    switch (String(mode || '').toLowerCase()) {
+      case 'factory':
+      case 'migration_factory':
+        return 'migration_factory';
+      case 'cdc':
+      case 'migration_cdc':
+        return 'migration_cdc';
+      case 'replication':
+      case 'continuous_replication':
+        return 'continuous_replication';
+      case 'assessment':
+      default:
+        return 'assessment';
+    }
+  }
+
+  #splitCsv(value) {
+    return String(value || '')
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  #findTenantProject(projectId, tenantId) {
+    const project = this.state.projects.find((item) => item.projectId === projectId && item.tenantId === tenantId);
+    if (!project) {
+      throw new Error('Project not found');
+    }
+    return project;
   }
 
   registerAgent({
@@ -717,6 +769,7 @@ export class SynqoraStore {
 
   #enqueueFollowUpJobs(completedJob) {
     const nextTypeMap = {
+      validate_oracle_connection: 'discover_source_inventory',
       discover_source_inventory: 'run_assessment_rules',
       run_assessment_rules: 'generate_conversion_artifacts',
       generate_conversion_artifacts: 'run_validation_check'
@@ -744,7 +797,9 @@ export class SynqoraStore {
       maxAttempts: 3,
       payload: {
         parentJobRunId: completedJob.jobRunId,
-        projectId: completedJob.projectId
+        projectId: completedJob.projectId,
+        sourceEnvironmentId: completedJob.payload?.sourceEnvironmentId,
+        schemaScope: completedJob.payload?.schemaScope || completedJob.payload?.sourceSchemaPatterns
       },
       createdAt: nowIso()
     };
