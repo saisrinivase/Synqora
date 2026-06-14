@@ -37,6 +37,28 @@ The scaffold now supports two storage modes:
 - `postgres`
   - durable control-plane state backed by PostgreSQL through `psql`
 
+## Implementation Direction
+
+The current repository is still a prototype implementation:
+
+- `Backend / control plane`
+  - currently Node.js
+- `Frontend`
+  - currently static HTML, CSS, and vanilla JavaScript
+- `Agent`
+  - currently Node.js CLI
+
+For the longer-term enterprise product, the recommended direction is:
+
+- `React + TypeScript frontend`
+  - reusable components, route-level state, typed API contracts, testable hooks, design-system reuse, and enterprise UI maintainability
+- `Go control-plane and agent services`
+  - strong concurrency model, simple deployment, static binaries, long-running agent reliability, job workers, CDC orchestration, and lower operational footprint
+- `PostgreSQL-backed control plane`
+  - durable tenants, projects, connectors, jobs, evidence, audit history, and policy state
+
+The current prototype should therefore be treated as a working product model and UX validation layer, not the final production stack.
+
 ## Vision
 
 `Synqora` should automate the full migration lifecycle from source discovery to post-cutover stabilization while still giving migration engineers:
@@ -156,6 +178,8 @@ The working prototype now includes a local SaaS-style login boundary:
   - the browser does not store API tokens in local storage
 - `Separate agent trust`
   - customer-side agents still use bearer tokens from the agent registration flow
+- `Enterprise integration surface`
+  - the product model now exposes connectors, workflow hooks, guardrails, evidence, observability, and extensibility as first-class platform concepts
 
 Local demo account:
 
