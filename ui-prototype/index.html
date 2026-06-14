@@ -1224,13 +1224,13 @@
     <span class="col">currency_code</span>   <span class="typ">CHAR</span>(3)           <span class="kw">DEFAULT</span> <span class="str">'USD'</span>,
     <span class="col">balance</span>         <span class="typ">NUMERIC</span>(18,4),
     <span class="col">is_active</span>       <span class="typ">BOOLEAN</span>           <span class="kw">DEFAULT</span> <span class="lit">TRUE</span>,  <span class="cmt">-- ⚡ NUMBER(1) → BOOLEAN</span>
-    <span class="col">created_date</span>    <span class="typ">TIMESTAMPTZ</span>       <span class="kw">DEFAULT</span> <span class="fn">NOW</span>(), <span class="cmt">-- ⚡ DATE+SYSDATE → TIMESTAMPTZ+NOW()</span>
-    <span class="col">modified_date</span>   <span class="typ">TIMESTAMPTZ</span>,
+    <span class="col">created_date</span>    <span class="typ">TIMESTAMP</span>         <span class="kw">DEFAULT</span> <span class="fn">LOCALTIMESTAMP</span>, <span class="cmt">-- ⚡ DATE+SYSDATE → TIMESTAMP+LOCALTIMESTAMP</span>
+    <span class="col">modified_date</span>   <span class="typ">TIMESTAMP</span>,
     <span class="col">modified_by</span>     <span class="typ">VARCHAR</span>(60),
     <span class="col">remarks</span>         <span class="typ">TEXT</span>,             <span class="cmt">-- ⚡ CLOB → TEXT</span>
     <span class="kw">CONSTRAINT</span> <span class="obj">pk_accounts</span> <span class="kw">PRIMARY KEY</span> (<span class="col">account_id</span>),
     <span class="kw">CONSTRAINT</span> <span class="obj">fk_acct_parent</span> <span class="kw">FOREIGN KEY</span> (<span class="col">parent_id</span>)
-        <span class="kw">REFERENCES</span> <span class="obj">accounts</span>(<span class="col">account_id</span>),
+        <span class="kw">REFERENCES</span> <span class="obj">finance_core</span>.<span class="obj">accounts</span>(<span class="col">account_id</span>),
     <span class="kw">CONSTRAINT</span> <span class="obj">chk_acct_type</span> <span class="kw">CHECK</span> (
         <span class="col">account_type</span> <span class="kw">IN</span> (<span class="str">'GENERAL'</span>,<span class="str">'ASSET'</span>,<span class="str">'LIABILITY'</span>,<span class="str">'EQUITY'</span>,<span class="str">'REVENUE'</span>,<span class="str">'EXPENSE'</span>)
     )
@@ -1255,8 +1255,8 @@
               <div class="rule-item">
                 <span class="rule-badge auto">AUTO</span>
                 <div class="rule-info">
-                  <span class="rule-name">DATE + SYSDATE → TIMESTAMPTZ + NOW()</span>
-                  <span class="rule-desc">Oracle DATE (includes time) maps to TIMESTAMPTZ; SYSDATE → NOW()</span>
+                  <span class="rule-name">DATE + SYSDATE → TIMESTAMP + LOCALTIMESTAMP</span>
+                  <span class="rule-desc">Oracle DATE carries date and time without timezone; PostgreSQL TIMESTAMP preserves that behavior unless a timezone policy is selected</span>
                 </div>
                 <span class="rule-confidence high">High</span>
               </div>

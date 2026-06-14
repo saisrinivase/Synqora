@@ -967,13 +967,13 @@ const objectData = {
     <span class="col">currency_code</span>   <span class="typ">CHAR</span>(3)           <span class="kw">DEFAULT</span> <span class="str">'USD'</span>,
     <span class="col">balance</span>         <span class="typ">NUMERIC</span>(18,4),
     <span class="col">is_active</span>       <span class="typ">BOOLEAN</span>           <span class="kw">DEFAULT</span> <span class="lit">TRUE</span>,  <span class="cmt">-- ⚡ NUMBER(1) → BOOLEAN</span>
-    <span class="col">created_date</span>    <span class="typ">TIMESTAMPTZ</span>       <span class="kw">DEFAULT</span> <span class="fn">NOW</span>(), <span class="cmt">-- ⚡ DATE+SYSDATE → TIMESTAMPTZ+NOW()</span>
-    <span class="col">modified_date</span>   <span class="typ">TIMESTAMPTZ</span>,
+    <span class="col">created_date</span>    <span class="typ">TIMESTAMP</span>         <span class="kw">DEFAULT</span> <span class="fn">LOCALTIMESTAMP</span>, <span class="cmt">-- ⚡ DATE+SYSDATE → TIMESTAMP+LOCALTIMESTAMP</span>
+    <span class="col">modified_date</span>   <span class="typ">TIMESTAMP</span>,
     <span class="col">modified_by</span>     <span class="typ">VARCHAR</span>(60),
     <span class="col">remarks</span>         <span class="typ">TEXT</span>,             <span class="cmt">-- ⚡ CLOB → TEXT</span>
     <span class="kw">CONSTRAINT</span> <span class="obj">pk_accounts</span> <span class="kw">PRIMARY KEY</span> (<span class="col">account_id</span>),
     <span class="kw">CONSTRAINT</span> <span class="obj">fk_acct_parent</span> <span class="kw">FOREIGN KEY</span> (<span class="col">parent_id</span>)
-        <span class="kw">REFERENCES</span> <span class="obj">accounts</span>(<span class="col">account_id</span>),
+        <span class="kw">REFERENCES</span> <span class="obj">finance_core</span>.<span class="obj">accounts</span>(<span class="col">account_id</span>),
     <span class="kw">CONSTRAINT</span> <span class="obj">chk_acct_type</span> <span class="kw">CHECK</span> (
         <span class="col">account_type</span> <span class="kw">IN</span> (<span class="str">'GENERAL'</span>,<span class="str">'ASSET'</span>,<span class="str">'LIABILITY'</span>,<span class="str">'EQUITY'</span>,<span class="str">'REVENUE'</span>,<span class="str">'EXPENSE'</span>)
     )
@@ -1006,26 +1006,26 @@ const objectData = {
     target: `<span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="obj">finance_core</span>.<span class="obj">transactions</span> (
     <span class="col">txn_id</span>          <span class="typ">BIGINT</span>            <span class="kw">NOT NULL</span>,
     <span class="col">account_id</span>      <span class="typ">BIGINT</span>            <span class="kw">NOT NULL</span>,
-    <span class="col">txn_date</span>        <span class="typ">TIMESTAMPTZ</span>       <span class="kw">NOT NULL</span>,
+    <span class="col">txn_date</span>        <span class="typ">TIMESTAMP</span>         <span class="kw">NOT NULL</span>,
     <span class="col">amount</span>          <span class="typ">NUMERIC</span>(38,10),   <span class="cmt">-- ⚠ Verify precision requirements</span>
     <span class="col">currency</span>        <span class="typ">CHAR</span>(3)           <span class="kw">DEFAULT</span> <span class="str">'USD'</span>,
     <span class="col">description</span>     <span class="typ">VARCHAR</span>(4000),
     <span class="col">status</span>          <span class="typ">VARCHAR</span>(20)       <span class="kw">DEFAULT</span> <span class="str">'PENDING'</span>,
     <span class="col">created_by</span>      <span class="typ">VARCHAR</span>(60),
-    <span class="col">created_date</span>    <span class="typ">TIMESTAMPTZ</span>       <span class="kw">DEFAULT</span> <span class="fn">NOW</span>(),
-    <span class="kw">CONSTRAINT</span> <span class="obj">pk_txn</span> <span class="kw">PRIMARY KEY</span> (<span class="col">txn_id</span>),
+    <span class="col">created_date</span>    <span class="typ">TIMESTAMP</span>         <span class="kw">DEFAULT</span> <span class="fn">LOCALTIMESTAMP</span>,
+    <span class="kw">CONSTRAINT</span> <span class="obj">pk_txn</span> <span class="kw">PRIMARY KEY</span> (<span class="col">txn_id</span>, <span class="col">txn_date</span>),
     <span class="kw">CONSTRAINT</span> <span class="obj">fk_txn_acct</span> <span class="kw">FOREIGN KEY</span> (<span class="col">account_id</span>)
-        <span class="kw">REFERENCES</span> <span class="obj">accounts</span>(<span class="col">account_id</span>)
+        <span class="kw">REFERENCES</span> <span class="obj">finance_core</span>.<span class="obj">accounts</span>(<span class="col">account_id</span>)
 ) <span class="kw">PARTITION BY RANGE</span> (<span class="col">txn_date</span>);
 
-<span class="cmt">-- ⚡ Partitions converted to PG declarative partitioning</span>
-<span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="obj">transactions_p_2024</span> <span class="kw">PARTITION OF</span> <span class="obj">transactions</span>
-    <span class="kw">FOR VALUES FROM</span> (<span class="str">'2024-01-01'</span>) <span class="kw">TO</span> (<span class="str">'2025-01-01'</span>);
-<span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="obj">transactions_p_2025</span> <span class="kw">PARTITION OF</span> <span class="obj">transactions</span>
+<span class="cmt">-- ⚡ Partitions converted with Oracle LESS THAN semantics preserved</span>
+<span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="obj">finance_core</span>.<span class="obj">transactions_p_2024</span> <span class="kw">PARTITION OF</span> <span class="obj">finance_core</span>.<span class="obj">transactions</span>
+    <span class="kw">FOR VALUES FROM</span> (<span class="fn">MINVALUE</span>) <span class="kw">TO</span> (<span class="str">'2025-01-01'</span>);
+<span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="obj">finance_core</span>.<span class="obj">transactions_p_2025</span> <span class="kw">PARTITION OF</span> <span class="obj">finance_core</span>.<span class="obj">transactions</span>
     <span class="kw">FOR VALUES FROM</span> (<span class="str">'2025-01-01'</span>) <span class="kw">TO</span> (<span class="str">'2026-01-01'</span>);
-<span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="obj">transactions_p_default</span> <span class="kw">PARTITION OF</span> <span class="obj">transactions</span>
-    <span class="kw">DEFAULT</span>;
-<span class="cmt">-- ⚡ 6 rules applied · Confidence: MEDIUM (review partition strategy)</span>`
+<span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="obj">finance_core</span>.<span class="obj">transactions_p_max</span> <span class="kw">PARTITION OF</span> <span class="obj">finance_core</span>.<span class="obj">transactions</span>
+    <span class="kw">FOR VALUES FROM</span> (<span class="str">'2026-01-01'</span>) <span class="kw">TO</span> (<span class="fn">MAXVALUE</span>);
+<span class="cmt">-- ⚡ 7 rules applied · Confidence: MEDIUM (review PK and partition strategy)</span>`
   },
   'PKG_FINANCE': {
     source: `<span class="kw">CREATE OR REPLACE</span> <span class="kw">PACKAGE BODY</span> <span class="obj">FINANCE_CORE</span>.<span class="obj">PKG_FINANCE</span> <span class="kw">AS</span>
@@ -1058,8 +1058,8 @@ const objectData = {
 
 <span class="kw">CREATE OR REPLACE FUNCTION</span> <span class="obj">finance_core</span>.<span class="fn">calc_revenue</span>(
     <span class="col">p_account_id</span>  <span class="typ">BIGINT</span>,
-    <span class="col">p_start_date</span>  <span class="typ">TIMESTAMPTZ</span>,
-    <span class="col">p_end_date</span>    <span class="typ">TIMESTAMPTZ</span>
+    <span class="col">p_start_date</span>  <span class="typ">TIMESTAMP</span>,
+    <span class="col">p_end_date</span>    <span class="typ">TIMESTAMP</span>
 ) <span class="kw">RETURNS</span> <span class="typ">NUMERIC</span>(18,4) <span class="kw">AS</span> $$
 <span class="kw">DECLARE</span>
     <span class="col">v_total</span>  <span class="typ">NUMERIC</span>(18,4) := 0;

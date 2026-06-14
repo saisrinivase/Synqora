@@ -674,16 +674,38 @@ The platform should expose stable APIs. Suggested groups:
 The rules engine is central. A good rule record should include:
 
 - `rule_id`
+- `rule_code`
+- `ruleset_version`
 - `source_engine`
+- `source_version_range`
 - `target_engine`
+- `target_version_range`
 - `category`
 - `object_type`
 - `match_condition`
 - `severity`
 - `confidence`
+- `automation_class`
 - `rewrite_template`
 - `validation_template`
 - `autofix_template`
+- `source_reference_urls`
+- `target_reference_urls`
+- `test_fixture_refs`
+- `last_verified_at`
+- `review_status`
+- `reviewer`
+
+Automation classes:
+
+- `AUTO_SAFE`
+  - deterministic conversion with target syntax validation and low semantic risk
+- `AUTO_REVIEW`
+  - generated conversion is useful, but deployment requires migration engineer approval
+- `MANUAL_REQUIRED`
+  - deterministic detection is possible, but safe rewrite requires human design
+- `BLOCKER`
+  - cannot proceed until the object, dependency, or policy issue is resolved
 
 Rule families:
 
@@ -695,6 +717,75 @@ Rule families:
 - data correctness rules
 - CDC applicability rules
 - validation rules
+
+### 13.1 Rules Must Be Deterministic First
+
+The default conversion path must be rule-based, not LLM-based.
+
+The conversion engine should:
+
+1. parse source object text or metadata into a normalized representation
+2. apply deterministic rule packs
+3. generate PostgreSQL artifacts
+4. run syntax and dependency validation against a disposable PostgreSQL target
+5. score the artifact
+6. require approval when semantic risk is not provably low
+
+AI assistance can be used only after deterministic rules classify an object as complex, ambiguous, or manual-review-heavy.
+
+### 13.2 PostgreSQL Official Documentation Source Registry
+
+Every PostgreSQL-facing rule should link back to official PostgreSQL documentation wherever possible.
+
+Initial official documentation anchors:
+
+- Partitioning rules:
+  - `https://www.postgresql.org/docs/current/ddl-partitioning.html`
+- `CREATE TABLE`, partitions, constraints, defaults:
+  - `https://www.postgresql.org/docs/current/sql-createtable.html`
+- Date/time types and functions:
+  - `https://www.postgresql.org/docs/current/datatype-datetime.html`
+  - `https://www.postgresql.org/docs/current/functions-datetime.html`
+- Numeric types:
+  - `https://www.postgresql.org/docs/current/datatype-numeric.html`
+- Lexical structure and identifier folding:
+  - `https://www.postgresql.org/docs/current/sql-syntax-lexical.html`
+- Indexes:
+  - `https://www.postgresql.org/docs/current/indexes.html`
+- Constraints:
+  - `https://www.postgresql.org/docs/current/ddl-constraints.html`
+
+Rule governance should include a scheduled documentation review:
+
+- check PostgreSQL current documentation for changed behavior each release cycle
+- maintain version-specific rule packs such as `postgresql_15`, `postgresql_16`, `postgresql_17`, `postgresql_18`
+- mark rules stale if `last_verified_at` exceeds the configured review window
+- require migration-engineer approval before promoting stale rules to production use
+- keep source links in rule-hit evidence so generated artifacts explain why a rewrite was chosen
+
+### 13.3 Example Rule Expectations
+
+Oracle `DATE`:
+
+- default PostgreSQL mapping should be `timestamp without time zone`
+- only map to `timestamptz` when the project has an explicit timezone-normalization policy
+- `SYSDATE` should default to `localtimestamp`, with `clock_timestamp()` considered when statement/transaction timestamp behavior matters
+
+PostgreSQL partitioned primary keys:
+
+- a generated primary key or unique constraint on a partitioned table must include the partition key
+- if preserving the Oracle primary key would violate PostgreSQL partition rules, mark the artifact `AUTO_REVIEW` or `BLOCKER`
+
+Oracle range partition `VALUES LESS THAN`:
+
+- preserve lower-bound semantics explicitly
+- first PostgreSQL partition should use `MINVALUE` when Oracle did not declare a lower bound
+- Oracle `MAXVALUE` should map to PostgreSQL `MAXVALUE` or a reviewed default partition strategy
+
+Identifier behavior:
+
+- unquoted Oracle identifiers should normally be folded to lowercase PostgreSQL identifiers
+- quoted identifiers, mixed-case objects, and application SQL dependencies require review
 
 ## 14. Conversion Quality Model
 

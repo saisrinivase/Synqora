@@ -59,6 +59,23 @@ For the longer-term enterprise product, the recommended direction is:
 
 The current prototype should therefore be treated as a working product model and UX validation layer, not the final production stack.
 
+## Conversion Engine Direction
+
+Synqora should be a `rules-first` migration platform.
+
+The expected conversion flow is:
+
+1. parse Oracle metadata, DDL, and code into normalized inventory
+2. apply deterministic rule packs
+3. generate PostgreSQL artifacts
+4. validate generated syntax and dependencies against a disposable PostgreSQL target
+5. classify every artifact as `AUTO_SAFE`, `AUTO_REVIEW`, `MANUAL_REQUIRED`, or `BLOCKER`
+6. use AI assistance only for complex low-confidence rewrites, explanations, or remediation suggestions
+
+This means auto-conversion should happen through rules, not through Claude, Codex, or any other LLM as the primary engine.
+
+PostgreSQL-facing rules should carry official PostgreSQL documentation links, target version ranges, validation fixtures, and last-reviewed timestamps. The initial source registry includes PostgreSQL documentation for partitioning, `CREATE TABLE`, date/time behavior, numeric types, identifiers, indexes, and constraints.
+
 ## Vision
 
 `Synqora` should automate the full migration lifecycle from source discovery to post-cutover stabilization while still giving migration engineers:
