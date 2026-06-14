@@ -76,6 +76,13 @@ This means auto-conversion should happen through rules, not through Claude, Code
 
 PostgreSQL-facing rules should carry official PostgreSQL documentation links, target version ranges, validation fixtures, and last-reviewed timestamps. The initial source registry includes PostgreSQL documentation for partitioning, `CREATE TABLE`, date/time behavior, numeric types, identifiers, indexes, and constraints.
 
+The first concrete ruleset is now:
+
+- [rules/oracle_to_postgres_datatypes.v1.json](/Users/saiendla/Desktop/OracletoPGMigration/rules/oracle_to_postgres_datatypes.v1.json)
+  - versioned datatype mapping catalog with automation class, confidence, severity, evidence requirements, review triggers, and official documentation references
+- [rules/oracle_to_postgres_datatype_rules.md](/Users/saiendla/Desktop/OracletoPGMigration/rules/oracle_to_postgres_datatype_rules.md)
+  - explanation of why datatype conversion must be conservative and evidence-driven
+
 ## Vision
 
 `Synqora` should automate the full migration lifecycle from source discovery to post-cutover stabilization while still giving migration engineers:
@@ -225,6 +232,8 @@ Local email signup is functional for prototype validation. Passwords are stored 
   - in-memory control-plane state and job orchestration prototype
 - [apps/agent/src/cli.js](/Users/saiendla/Desktop/OracletoPGMigration/apps/agent/src/cli.js)
   - minimal `Synqora Agent` CLI
+- [rules/oracle_to_postgres_datatypes.v1.json](/Users/saiendla/Desktop/OracletoPGMigration/rules/oracle_to_postgres_datatypes.v1.json)
+  - deterministic Oracle-to-PostgreSQL datatype conversion ruleset
 
 ## Current Focus
 

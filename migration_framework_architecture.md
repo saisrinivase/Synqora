@@ -718,6 +718,21 @@ Rule families:
 - CDC applicability rules
 - validation rules
 
+The first concrete datatype catalog lives at:
+
+- `rules/oracle_to_postgres_datatypes.v1.json`
+
+Datatype conversion must emit rule-hit evidence for every converted column, including:
+
+- source datatype and discovered precision/scale/length semantics
+- selected PostgreSQL datatype
+- automation class
+- confidence
+- evidence gaps
+- review triggers
+- official source/target documentation references
+- validation status
+
 ### 13.1 Rules Must Be Deterministic First
 
 The default conversion path must be rule-based, not LLM-based.
