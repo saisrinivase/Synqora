@@ -1,3 +1,6 @@
 node_modules/
 .synqora/
+.playwright-mcp/
+.cache/
+apps/web-react/dist/
 *.swp

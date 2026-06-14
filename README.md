@@ -17,47 +17,58 @@ The current preferred deployment direction is:
 - `customer-managed Synqora Agents`
 - `web-first collaboration with CLI support`
 
-## V1 Scaffold
+## Active Implementation Stack
 
-The repository now includes a runnable V1 scaffold:
+Synqora is now moving to the long-term product stack:
 
-- `Synqora Cloud`
-  - a lightweight Node.js control-plane prototype
-- `Synqora Agent`
-  - a lightweight Node.js CLI for register / heartbeat / poll / run-once flows
-- `UI prototype`
-  - a public Synqora product homepage plus the signed-in migration command center served by the cloud service, with SaaS login, account creation, top-level stats hydrated from the API, enterprise workspace hierarchy, project creation, and separate database connection onboarding visible in the UX
-
-This is intentionally a thin implementation slice. It proves the product shape without locking us into a heavy framework too early.
-
-The scaffold now supports two storage modes:
-
-- `memory`
-  - fastest for local UI and API prototyping
-- `postgres`
-  - durable control-plane state backed by PostgreSQL through `psql`
-
-## Implementation Direction
-
-The current repository is still a prototype implementation:
-
-- `Backend / control plane`
-  - currently Node.js
-- `Frontend`
-  - currently static HTML, CSS, and vanilla JavaScript
-- `Agent`
-  - currently Node.js CLI
-
-For the longer-term enterprise product, the recommended direction is:
-
-- `React + TypeScript frontend`
-  - reusable components, route-level state, typed API contracts, testable hooks, design-system reuse, and enterprise UI maintainability
-- `Go control-plane and agent services`
-  - strong concurrency model, simple deployment, static binaries, long-running agent reliability, job workers, CDC orchestration, and lower operational footprint
+- `Go control plane`
+  - [apps/api-go](/Users/saiendla/Desktop/OracletoPGMigration/apps/api-go)
+  - owns tenancy, session/auth boundary, projects, database connection metadata, workflow queueing, and API contracts
+- `React + TypeScript web app`
+  - [apps/web-react](/Users/saiendla/Desktop/OracletoPGMigration/apps/web-react)
+  - owns the enterprise web UI, project workflow, source connection onboarding, and lifecycle readiness gates
+- `Python migration engine`
+  - [apps/engine-python](/Users/saiendla/Desktop/OracletoPGMigration/apps/engine-python)
+  - owns deterministic assessment, datatype mapping rules, migration scoring, and future conversion/validation engines
 - `PostgreSQL-backed control plane`
-  - durable tenants, projects, connectors, jobs, evidence, audit history, and policy state
+  - remains the durable-state target for tenants, projects, connectors, jobs, evidence, audit history, and policy state
 
-The current prototype should therefore be treated as a working product model and UX validation layer, not the final production stack.
+The previous Node/static implementation remains in `apps/cloud`, `apps/agent`, and `ui-prototype` as a temporary legacy/reference prototype only. New product work should go into Go, React, or Python unless explicitly marked as a legacy compatibility change.
+
+## Local Development
+
+Run the Go API:
+
+```bash
+npm run start:api
+```
+
+Run the React app in another terminal:
+
+```bash
+cd apps/web-react
+npm install
+cd ../..
+npm run start:web
+```
+
+Run the active stack tests:
+
+```bash
+npm run test:api
+npm run test:engine
+```
+
+Run all currently available tests, including legacy prototype tests:
+
+```bash
+npm test
+```
+
+Local demo account:
+
+- Email: `sai@example.com`
+- Password: `Synqora_123`
 
 ## Conversion Engine Direction
 
