@@ -379,40 +379,40 @@
             <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/></svg>
           </div>
           <div class="stat-info">
-            <span class="stat-value" id="activeProjectsStat" data-count="12">0</span>
+            <span class="stat-value" id="activeProjectsStat" data-count="0">0</span>
             <span class="stat-label">Active Projects</span>
           </div>
-          <span class="stat-trend up">+3 this month</span>
+          <span class="stat-trend idle" id="activeProjectsTrend">No projects yet</span>
         </div>
         <div class="stat-card">
           <div class="stat-icon" style="--accent: #06b6d4">
             <svg viewBox="0 0 20 20" fill="currentColor"><path d="M3 12v3c0 1.657 3.134 3 7 3s7-1.343 7-3v-3c0 1.657-3.134 3-7 3s-7-1.343-7-3z"/><path d="M3 7v3c0 1.657 3.134 3 7 3s7-1.343 7-3V7c0 1.657-3.134 3-7 3S3 8.657 3 7z"/><path d="M17 5c0 1.657-3.134 3-7 3S3 6.657 3 5s3.134-3 7-3 7 1.343 7 3z"/></svg>
           </div>
           <div class="stat-info">
-            <span class="stat-value" id="objectsDiscoveredStat" data-count="48723">0</span>
+            <span class="stat-value" id="objectsDiscoveredStat" data-count="0">0</span>
             <span class="stat-label">Objects Discovered</span>
           </div>
-          <span class="stat-trend up">+12,401 new</span>
+          <span class="stat-trend idle" id="objectsDiscoveredTrend">Awaiting discovery</span>
         </div>
         <div class="stat-card">
           <div class="stat-icon" style="--accent: #10b981">
             <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
           </div>
           <div class="stat-info">
-            <span class="stat-value" id="conversionRateStat" data-count="94">0</span>
+            <span class="stat-value" id="conversionRateStat" data-count="0">0</span>
             <span class="stat-label">Conversion Rate %</span>
           </div>
-          <span class="stat-trend up">+2.3% vs last week</span>
+          <span class="stat-trend idle" id="conversionRateTrend">No conversion run</span>
         </div>
         <div class="stat-card">
           <div class="stat-icon" style="--accent: #f59e0b">
             <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
           </div>
           <div class="stat-info">
-            <span class="stat-value"><span id="dataMigratedWholeStat" data-count="2">0</span>.<span id="dataMigratedFractionStat" data-count="4">0</span> TB</span>
+            <span class="stat-value"><span id="dataMigratedWholeStat" data-count="0">0</span>.<span id="dataMigratedFractionStat" data-count="0">0</span> TB</span>
             <span class="stat-label">Data Migrated</span>
           </div>
-          <span class="stat-trend up">847 GB this week</span>
+          <span class="stat-trend idle" id="dataMigratedTrend">No load started</span>
         </div>
       </div>
 
@@ -522,211 +522,22 @@
       </div>
 
       <div class="project-grid" id="projectGrid">
-        <!-- Project 1 -->
-        <div class="project-card" data-status="in-progress">
-          <div class="project-card-header">
-            <div class="project-badge oracle">Oracle 19c</div>
-            <div class="project-badge pg">PostgreSQL 16</div>
-            <span class="project-mode">Migration + CDC</span>
-          </div>
-          <h3 class="project-name">ERP Core — FINPROD</h3>
-          <p class="project-desc">Financial production database migration, 847 tables, 312 packages</p>
-          <div class="project-metrics">
-            <div class="metric">
-              <span class="metric-label">Schema</span>
-              <div class="progress-bar"><div class="progress-fill" style="width: 100%; --bar-color: #10b981"></div></div>
-              <span class="metric-value">100%</span>
-            </div>
-            <div class="metric">
-              <span class="metric-label">Data Load</span>
-              <div class="progress-bar"><div class="progress-fill" style="width: 73%; --bar-color: #06b6d4"></div></div>
-              <span class="metric-value">73%</span>
-            </div>
-            <div class="metric">
-              <span class="metric-label">Validation</span>
-              <div class="progress-bar"><div class="progress-fill" style="width: 45%; --bar-color: #7c3aed"></div></div>
-              <span class="metric-value">45%</span>
-            </div>
-          </div>
-          <div class="project-footer">
-            <div class="project-issues">
-              <span class="issue-dot critical"></span> 3 Critical
-              <span class="issue-dot warning"></span> 14 Warnings
-            </div>
-            <span class="project-updated">Updated 12m ago</span>
-          </div>
-        </div>
-
-        <!-- Project 2 -->
-        <div class="project-card" data-status="assessment">
-          <div class="project-card-header">
-            <div class="project-badge oracle">Oracle 12c</div>
-            <div class="project-badge pg">Aurora PG 15</div>
-            <span class="project-mode">Assessment Only</span>
-          </div>
-          <h3 class="project-name">HR System — HRPROD</h3>
-          <p class="project-desc">Human resources database, 234 tables, 89 procedures</p>
-          <div class="project-metrics">
-            <div class="metric">
-              <span class="metric-label">Discovery</span>
-              <div class="progress-bar"><div class="progress-fill" style="width: 100%; --bar-color: #10b981"></div></div>
-              <span class="metric-value">100%</span>
-            </div>
-            <div class="metric">
-              <span class="metric-label">Assessment</span>
-              <div class="progress-bar"><div class="progress-fill" style="width: 62%; --bar-color: #f59e0b"></div></div>
-              <span class="metric-value">62%</span>
-            </div>
-            <div class="metric">
-              <span class="metric-label">Risk Score</span>
-              <div class="progress-bar"><div class="progress-fill" style="width: 38%; --bar-color: #ef4444"></div></div>
-              <span class="metric-value">Medium</span>
-            </div>
-          </div>
-          <div class="project-footer">
-            <div class="project-issues">
-              <span class="issue-dot critical"></span> 7 Critical
-              <span class="issue-dot warning"></span> 31 Warnings
-            </div>
-            <span class="project-updated">Updated 1h ago</span>
-          </div>
-        </div>
-
-        <!-- Project 3 -->
-        <div class="project-card" data-status="cutover">
-          <div class="project-card-header">
-            <div class="project-badge oracle">Oracle 19c</div>
-            <div class="project-badge pg">Cloud SQL PG 16</div>
-            <span class="project-mode">Migration Factory</span>
-          </div>
-          <h3 class="project-name">Inventory — INVPROD</h3>
-          <p class="project-desc">Inventory management, 156 tables, 45 views, 23 packages</p>
-          <div class="project-metrics">
-            <div class="metric">
-              <span class="metric-label">Schema</span>
-              <div class="progress-bar"><div class="progress-fill" style="width: 100%; --bar-color: #10b981"></div></div>
-              <span class="metric-value">100%</span>
-            </div>
-            <div class="metric">
-              <span class="metric-label">Data Load</span>
-              <div class="progress-bar"><div class="progress-fill" style="width: 100%; --bar-color: #10b981"></div></div>
-              <span class="metric-value">100%</span>
-            </div>
-            <div class="metric">
-              <span class="metric-label">Validation</span>
-              <div class="progress-bar"><div class="progress-fill" style="width: 98%; --bar-color: #10b981"></div></div>
-              <span class="metric-value">98%</span>
-            </div>
-          </div>
-          <div class="project-footer">
-            <div class="project-issues">
-              <span class="issue-dot success"></span> 0 Critical
-              <span class="issue-dot warning"></span> 2 Warnings
-            </div>
-            <span class="project-updated cutover-ready">Cutover Ready</span>
-          </div>
-        </div>
+        <div class="glass-card empty-state">No migration projects yet. Create a project, then attach an Oracle source connection to start assessment.</div>
       </div>
 
       <!-- Activity & Risk -->
       <div class="dashboard-bottom">
         <div class="activity-feed glass-card">
           <h3>Recent Activity</h3>
-          <div class="activity-list">
-            <div class="activity-item">
-              <div class="activity-icon green"><svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg></div>
-              <div class="activity-content">
-                <span class="activity-text"><strong>FINPROD</strong> — Schema deployment phase 3 completed</span>
-                <span class="activity-time">12 minutes ago</span>
-              </div>
-            </div>
-            <div class="activity-item">
-              <div class="activity-icon blue"><svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path d="M3 12v3c0 1.657 3.134 3 7 3s7-1.343 7-3v-3c0 1.657-3.134 3-7 3s-7-1.343-7-3z"/><path d="M3 7v3c0 1.657 3.134 3 7 3s7-1.343 7-3V7c0 1.657-3.134 3-7 3S3 8.657 3 7z"/></svg></div>
-              <div class="activity-content">
-                <span class="activity-text"><strong>FINPROD</strong> — Bulk load chunk 847/1200 completed</span>
-                <span class="activity-time">23 minutes ago</span>
-              </div>
-            </div>
-            <div class="activity-item">
-              <div class="activity-icon amber"><svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg></div>
-              <div class="activity-content">
-                <span class="activity-text"><strong>HRPROD</strong> — 7 new critical issues found in assessment</span>
-                <span class="activity-time">1 hour ago</span>
-              </div>
-            </div>
-            <div class="activity-item">
-              <div class="activity-icon purple"><svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633z" clip-rule="evenodd"/></svg></div>
-              <div class="activity-content">
-                <span class="activity-text"><strong>INVPROD</strong> — 23 PL/SQL packages auto-converted</span>
-                <span class="activity-time">2 hours ago</span>
-              </div>
-            </div>
-            <div class="activity-item">
-              <div class="activity-icon green"><svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/></svg></div>
-              <div class="activity-content">
-                <span class="activity-text"><strong>INVPROD</strong> — All cutover gates passed ✓</span>
-                <span class="activity-time">3 hours ago</span>
-              </div>
-            </div>
+          <div class="activity-list" id="activityList">
+            <div class="empty-state small">No activity yet. Create a project and attach an Oracle source connection to start the audit trail.</div>
           </div>
         </div>
 
         <div class="risk-heatmap glass-card">
           <h3>Risk Heatmap</h3>
-          <div class="heatmap-grid">
-            <div class="heatmap-row">
-              <span class="heatmap-label">Schema</span>
-              <div class="heatmap-cells">
-                <div class="heatmap-cell low" title="FINPROD: Low">L</div>
-                <div class="heatmap-cell high" title="HRPROD: High">H</div>
-                <div class="heatmap-cell low" title="INVPROD: Low">L</div>
-              </div>
-            </div>
-            <div class="heatmap-row">
-              <span class="heatmap-label">Code</span>
-              <div class="heatmap-cells">
-                <div class="heatmap-cell med" title="FINPROD: Medium">M</div>
-                <div class="heatmap-cell high" title="HRPROD: High">H</div>
-                <div class="heatmap-cell low" title="INVPROD: Low">L</div>
-              </div>
-            </div>
-            <div class="heatmap-row">
-              <span class="heatmap-label">Data</span>
-              <div class="heatmap-cells">
-                <div class="heatmap-cell med" title="FINPROD: Medium">M</div>
-                <div class="heatmap-cell med" title="HRPROD: Medium">M</div>
-                <div class="heatmap-cell low" title="INVPROD: Low">L</div>
-              </div>
-            </div>
-            <div class="heatmap-row">
-              <span class="heatmap-label">Performance</span>
-              <div class="heatmap-cells">
-                <div class="heatmap-cell high" title="FINPROD: High">H</div>
-                <div class="heatmap-cell med" title="HRPROD: Medium">M</div>
-                <div class="heatmap-cell low" title="INVPROD: Low">L</div>
-              </div>
-            </div>
-            <div class="heatmap-row">
-              <span class="heatmap-label">Security</span>
-              <div class="heatmap-cells">
-                <div class="heatmap-cell low" title="FINPROD: Low">L</div>
-                <div class="heatmap-cell med" title="HRPROD: Medium">M</div>
-                <div class="heatmap-cell low" title="INVPROD: Low">L</div>
-              </div>
-            </div>
-            <div class="heatmap-row">
-              <span class="heatmap-label">Cutover</span>
-              <div class="heatmap-cells">
-                <div class="heatmap-cell med" title="FINPROD: Medium">M</div>
-                <div class="heatmap-cell high" title="HRPROD: High">H</div>
-                <div class="heatmap-cell low" title="INVPROD: Low">L</div>
-              </div>
-            </div>
-          </div>
-          <div class="heatmap-legend">
-            <span class="heatmap-project">FINPROD</span>
-            <span class="heatmap-project">HRPROD</span>
-            <span class="heatmap-project">INVPROD</span>
+          <div id="riskHeatmapContent">
+            <div class="empty-state small">Risk scoring will appear after Oracle discovery and assessment evidence is collected.</div>
           </div>
         </div>
       </div>
@@ -889,7 +700,7 @@
       <div class="view-header">
         <div>
           <h1>Assessment Report</h1>
-          <p class="view-subtitle">FINPROD — Migration complexity and risk analysis</p>
+          <p class="view-subtitle">Select a project to view migration complexity and risk analysis</p>
         </div>
         <div class="header-actions">
           <button class="btn btn-ghost">Export PDF</button>
@@ -1090,7 +901,7 @@
           <div class="tree-panel-header">
             <div class="tree-title">
               <span class="db-icon oracle-icon">ORA</span>
-              Source: FINPROD
+              Source: pending Oracle connection
             </div>
             <input type="text" class="tree-search" placeholder="Filter objects..." id="treeSearch">
           </div>
@@ -1288,7 +1099,7 @@
       <div class="view-header">
         <div>
           <h1>Data Load Monitor</h1>
-          <p class="view-subtitle">FINPROD — Bulk load progress and throughput</p>
+          <p class="view-subtitle">Select a project to view bulk load progress and throughput</p>
         </div>
         <div class="header-actions">
           <button class="btn btn-ghost">Retry Failed</button>
@@ -1394,7 +1205,7 @@
           <div class="stream-header">
             <div>
               <h3>Primary Replication Stream</h3>
-              <span class="stream-id mono">stream-finprod-001</span>
+              <span class="stream-id mono">stream-pending</span>
             </div>
             <span class="stream-status active-stream">
               <span class="pulse-dot"></span> Active
@@ -1506,7 +1317,7 @@
       <div class="view-header">
         <div>
           <h1>Validation Results</h1>
-          <p class="view-subtitle">FINPROD — Schema, data, and code validation</p>
+          <p class="view-subtitle">Select a project to view schema, data, and code validation</p>
         </div>
         <div class="header-actions">
           <button class="btn btn-primary">Run Full Validation</button>
@@ -1613,7 +1424,7 @@
       <div class="view-header">
         <div>
           <h1>Cutover Control</h1>
-          <p class="view-subtitle">FINPROD — Production cutover orchestration</p>
+          <p class="view-subtitle">Select a project to view production cutover orchestration</p>
         </div>
         <div class="header-actions">
           <button class="btn btn-danger" id="rollbackBtn">Rollback</button>
@@ -1747,7 +1558,7 @@
           </div>
           <div class="form-group">
             <label>Project Name</label>
-            <input type="text" class="form-input" id="projectNameInput" placeholder="ERP Core Modernization">
+            <input type="text" class="form-input" id="projectNameInput" placeholder="Finance Oracle Assessment">
           </div>
         </div>
         <div class="form-row">
@@ -1813,7 +1624,7 @@
             </div>
             <div class="form-group">
             <label>Initial Source Database</label>
-              <input type="text" class="form-input" id="projectInitialSourceInput" placeholder="FINPROD Oracle 19c">
+              <input type="text" class="form-input" id="projectInitialSourceInput" placeholder="Oracle production service name">
             </div>
           </div>
           <div class="form-row">
@@ -1934,7 +1745,7 @@
           <div class="form-row">
             <div class="form-group">
             <label>Service / Database Name</label>
-              <input type="text" class="form-input" id="connectionServiceInput" placeholder="FINPROD or finance_migration">
+              <input type="text" class="form-input" id="connectionServiceInput" placeholder="Oracle service name or PostgreSQL database">
             </div>
             <div class="form-group">
             <label>Schema Scope</label>

@@ -327,6 +327,7 @@ async function initDashboardApi() {
     renderDashboardProjects(payload.projects || []);
     renderConnectionProjectOptions(payload.projects || []);
     renderWorkspaceLabels(payload.tenant || {});
+    renderDashboardEvidence(payload);
 
     const defaultProjectId = appState.selectedProjectId || payload.projects?.[0]?.projectId;
     if (defaultProjectId) {
@@ -334,6 +335,7 @@ async function initDashboardApi() {
     } else {
       appState.selectedProjectId = null;
       appState.selectedProjectOverview = null;
+      renderLifecycleReadiness();
     }
   } catch (error) {
     console.warn('Synqora dashboard bootstrap failed:', error);
@@ -351,6 +353,7 @@ async function loadProjectOverview(projectId, options = {}) {
 
     renderDashboardProjects(appState.dashboard?.projects || []);
     renderProjectOverview(payload);
+    renderLifecycleReadiness();
 
     if (options.navigate) {
       setActiveView('project');
@@ -469,6 +472,157 @@ function renderWorkspaceLabels(tenant) {
   }
 }
 
+function renderDashboardEvidence(payload) {
+  const summary = payload.summary || {};
+  const projects = payload.projects || [];
+  const jobs = payload.jobs || [];
+
+  setStatTrend('activeProjectsTrend', projects.length ? `${projects.length} active workspace item${projects.length === 1 ? '' : 's'}` : 'No projects yet', projects.length ? 'up' : 'idle');
+  setStatTrend('objectsDiscoveredTrend', summary.discoveredObjects > 0 ? 'Discovery evidence collected' : 'Awaiting discovery', summary.discoveredObjects > 0 ? 'up' : 'idle');
+  setStatTrend('conversionRateTrend', summary.averageConversionRatePct > 0 ? 'Conversion evidence available' : 'No conversion run', summary.averageConversionRatePct > 0 ? 'up' : 'idle');
+  setStatTrend('dataMigratedTrend', summary.dataMigratedTb > 0 ? 'Load activity recorded' : 'No load started', summary.dataMigratedTb > 0 ? 'up' : 'idle');
+
+  renderActivityFeed(projects, jobs);
+  renderRiskHeatmap(projects);
+}
+
+function setStatTrend(id, text, tone = 'idle') {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text;
+  el.classList.remove('up', 'down', 'idle');
+  el.classList.add(tone);
+}
+
+function renderActivityFeed(projects, jobs) {
+  const list = document.getElementById('activityList');
+  if (!list) return;
+
+  const projectById = new Map(projects.map((project) => [project.projectId, project]));
+  const items = [];
+
+  jobs
+    .slice()
+    .sort((a, b) => new Date(b.createdAt || b.updatedAt || 0) - new Date(a.createdAt || a.updatedAt || 0))
+    .slice(0, 5)
+    .forEach((job) => {
+      const project = projectById.get(job.projectId);
+      items.push({
+        icon: job.status === 'failed' ? 'amber' : 'blue',
+        title: project?.projectCode || project?.name || 'Project',
+        text: `${humanizeJobType(job.jobType)} is ${humanizeStatus(job.status).toLowerCase()}`,
+        time: formatUpdatedAt(job.createdAt || job.updatedAt)
+      });
+    });
+
+  if (!items.length && projects.length) {
+    projects
+      .slice()
+      .sort((a, b) => new Date(b.createdAt || b.updatedAt || 0) - new Date(a.createdAt || a.updatedAt || 0))
+      .slice(0, 5)
+      .forEach((project) => {
+        items.push({
+          icon: project.status === 'assessment_queued' ? 'blue' : 'green',
+          title: project.projectCode || project.name || 'Project',
+          text: project.status === 'assessment_queued' ? 'Oracle source validation queued' : 'Project created',
+          time: formatUpdatedAt(project.updatedAt || project.createdAt)
+        });
+      });
+  }
+
+  if (!items.length) {
+    list.innerHTML = '<div class="empty-state small">No activity yet. Create a project and attach an Oracle source connection to start the audit trail.</div>';
+    return;
+  }
+
+  list.innerHTML = items
+    .map(
+      (item) => `
+        <div class="activity-item">
+          <div class="activity-icon ${escapeHtml(item.icon)}">${activityIcon(item.icon)}</div>
+          <div class="activity-content">
+            <span class="activity-text"><strong>${escapeHtml(item.title)}</strong> - ${escapeHtml(item.text)}</span>
+            <span class="activity-time">${escapeHtml(item.time)}</span>
+          </div>
+        </div>
+      `
+    )
+    .join('');
+}
+
+function renderRiskHeatmap(projects) {
+  const target = document.getElementById('riskHeatmapContent');
+  if (!target) return;
+
+  if (!projects.length) {
+    target.innerHTML = '<div class="empty-state small">Risk scoring will appear after Oracle discovery and assessment evidence is collected.</div>';
+    return;
+  }
+
+  const visibleProjects = projects.slice(0, 4);
+  const dimensions = ['Schema', 'Code', 'Data', 'Performance', 'Security', 'Cutover'];
+  const hasAssessmentEvidence = visibleProjects.some(
+    (project) => Number(project.criticalIssues || 0) > 0 || Number(project.warningIssues || 0) > 0 || Number(project.discoveredObjects || 0) > 0
+  );
+
+  if (!hasAssessmentEvidence) {
+    target.innerHTML = `
+      <div class="empty-state small">Projects exist, but risk scoring is pending. Run Oracle source validation and discovery to populate this heatmap.</div>
+      <div class="heatmap-legend pending-only">
+        ${visibleProjects.map((project) => `<span class="heatmap-project">${escapeHtml(project.projectCode || project.name || 'Project')}</span>`).join('')}
+      </div>
+    `;
+    return;
+  }
+
+  target.innerHTML = `
+    <div class="heatmap-grid">
+      ${dimensions
+        .map(
+          (dimension) => `
+            <div class="heatmap-row">
+              <span class="heatmap-label">${escapeHtml(dimension)}</span>
+              <div class="heatmap-cells">
+                ${visibleProjects.map((project) => riskCell(project, dimension)).join('')}
+              </div>
+            </div>
+          `
+        )
+        .join('')}
+    </div>
+    <div class="heatmap-legend">
+      ${visibleProjects.map((project) => `<span class="heatmap-project">${escapeHtml(project.projectCode || project.name || 'Project')}</span>`).join('')}
+    </div>
+  `;
+}
+
+function riskCell(project, dimension) {
+  const critical = Number(project.criticalIssues || 0);
+  const warning = Number(project.warningIssues || 0);
+  const discovered = Number(project.discoveredObjects || 0);
+  let tone = 'pending';
+  let label = 'P';
+  let title = 'Pending assessment evidence';
+
+  if (discovered > 0 || critical > 0 || warning > 0) {
+    if (critical > 0 || (dimension === 'Code' && warning > 10)) {
+      tone = 'high';
+      label = 'H';
+      title = 'High';
+    } else if (warning > 0 || project.pipelineStage === 'connectivity') {
+      tone = 'med';
+      label = 'M';
+      title = 'Medium';
+    } else {
+      tone = 'low';
+      label = 'L';
+      title = 'Low';
+    }
+  }
+
+  return `<div class="heatmap-cell ${tone}" title="${escapeHtml(project.projectCode || project.name || 'Project')}: ${escapeHtml(title)}">${label}</div>`;
+}
+
 function projectMatchesFilter(project, filterValue) {
   switch (filterValue) {
     case 'in_progress':
@@ -565,6 +719,148 @@ function renderProjectOverview(payload) {
   renderDetailList('migrationSummaryList', buildSummaryRows(payload));
   renderProjectAgents(payload.agents || []);
   renderProjectJobs(payload.jobs || [], payload.agents || []);
+}
+
+function renderLifecycleReadiness() {
+  const overview = appState.selectedProjectOverview;
+  const project = overview?.project;
+  const source = overview?.sourceEnvironment;
+  const jobs = overview?.jobs || [];
+
+  renderProjectPipelineReadiness(project);
+
+  const lifecycle = [
+    {
+      viewId: 'assessment',
+      subtitle: project ? `${project.projectCode || project.name} - source assessment readiness` : 'Select a project to start Oracle assessment',
+      title: 'Assessment waits for Oracle source evidence',
+      ready: Boolean(project && source && Number(project.discoveredObjects || 0) > 0),
+      next: project
+        ? source
+          ? 'An agent must validate connectivity and collect Oracle dictionary evidence before assessment results are shown.'
+          : 'Attach an Oracle source connection to queue connectivity validation.'
+        : 'Create a migration project, then attach an Oracle source connection.'
+    },
+    {
+      viewId: 'converter',
+      subtitle: project ? `${project.projectCode || project.name} - conversion readiness` : 'Select a project before conversion',
+      title: 'Schema conversion is locked until assessment completes',
+      ready: Boolean(project && Number(project.conversionRatePct || 0) > 0),
+      next: 'Complete Oracle assessment, confirm datatype policy, then run conversion rules against discovered objects.'
+    },
+    {
+      viewId: 'dataload',
+      subtitle: project ? `${project.projectCode || project.name} - load readiness` : 'Select a project before data load',
+      title: 'Data load requires a target and approved load plan',
+      ready: Boolean(project && Number(project.dataMigratedTb || 0) > 0),
+      next: 'Attach a PostgreSQL target, approve table chunking, and generate load jobs before monitoring throughput.'
+    },
+    {
+      viewId: 'cdc',
+      subtitle: project ? `${project.projectCode || project.name} - replication readiness` : 'Select a project before CDC',
+      title: 'CDC is disabled until replication prerequisites are approved',
+      ready: Boolean(project && normalizeStage(project.pipelineStage) === 'cdc'),
+      next: 'Validate supplemental logging, source privileges, target apply schema, and rollback strategy before starting CDC.'
+    },
+    {
+      viewId: 'validation',
+      subtitle: project ? `${project.projectCode || project.name} - validation readiness` : 'Select a project before validation',
+      title: 'Validation runs after schema deployment and data load',
+      ready: Boolean(project && ['validation', 'cutover'].includes(normalizeStage(project.pipelineStage))),
+      next: 'Run schema, row-count, checksum, semantic, and performance validations after target deployment.'
+    },
+    {
+      viewId: 'cutover',
+      subtitle: project ? `${project.projectCode || project.name} - cutover readiness` : 'Select a project before cutover',
+      title: 'Cutover controls remain locked until gates pass',
+      ready: Boolean(project && normalizeStage(project.pipelineStage) === 'cutover'),
+      next: 'Complete validation, CDC catch-up, approvals, rollback package, and freeze confirmation before cutover.'
+    }
+  ];
+
+  lifecycle.forEach((item) => {
+    const view = document.getElementById(`view-${item.viewId}`);
+    if (!view) return;
+
+    const subtitle = view.querySelector('.view-subtitle');
+    if (subtitle) subtitle.textContent = item.subtitle;
+
+    const panel = ensureLifecyclePanel(view);
+    const queuedJobCount = jobs.filter((job) => job.status === 'queued').length;
+    const runningJobCount = jobs.filter((job) => job.status === 'running').length;
+    const sourceStatus = source?.status ? humanizeStatus(source.status) : 'No source connection';
+
+    if (item.ready) {
+      view.classList.remove('stage-blocked');
+      panel.hidden = true;
+      return;
+    }
+
+    view.classList.add('stage-blocked');
+    panel.hidden = false;
+    panel.innerHTML = `
+      <div class="lifecycle-state-content">
+        <span class="surface-kicker">Readiness Gate</span>
+        <h3>${escapeHtml(item.title)}</h3>
+        <p>${escapeHtml(item.next)}</p>
+        <div class="lifecycle-readiness-grid">
+          <div><span>Project</span><strong>${escapeHtml(project?.projectCode || project?.name || 'Not created')}</strong></div>
+          <div><span>Source</span><strong>${escapeHtml(sourceStatus)}</strong></div>
+          <div><span>Queued Jobs</span><strong>${queuedJobCount}</strong></div>
+          <div><span>Running Jobs</span><strong>${runningJobCount}</strong></div>
+        </div>
+      </div>
+    `;
+  });
+}
+
+function renderProjectPipelineReadiness(project) {
+  const view = document.getElementById('view-project');
+  if (!view) return;
+
+  const panel = ensureLifecyclePanel(view);
+  const title = document.getElementById('projectViewTitle');
+  const subtitle = document.getElementById('projectViewSubtitle');
+
+  if (project) {
+    view.classList.remove('stage-blocked');
+    panel.hidden = true;
+    return;
+  }
+
+  if (title) title.textContent = 'Project Pipeline';
+  if (subtitle) subtitle.textContent = 'Create or select a project to load its migration control-plane state.';
+
+  view.classList.add('stage-blocked');
+  panel.hidden = false;
+  panel.innerHTML = `
+    <div class="lifecycle-state-content">
+      <span class="surface-kicker">Project Required</span>
+      <h3>No migration project selected</h3>
+      <p>Create a migration project first. A project becomes the business wrapper for Oracle source connections, assessment jobs, target planning, conversion, load, CDC, validation, and cutover evidence.</p>
+      <div class="lifecycle-readiness-grid">
+        <div><span>Project</span><strong>Not created</strong></div>
+        <div><span>Source</span><strong>No source connection</strong></div>
+        <div><span>Target</span><strong>Optional for assessment</strong></div>
+        <div><span>Next Step</span><strong>New Project</strong></div>
+      </div>
+    </div>
+  `;
+}
+
+function ensureLifecyclePanel(view) {
+  let panel = view.querySelector(':scope > .lifecycle-state');
+  if (panel) return panel;
+
+  panel = document.createElement('div');
+  panel.className = 'lifecycle-state glass-card';
+  const header = view.querySelector('.view-header');
+  if (header?.nextSibling) {
+    view.insertBefore(panel, header.nextSibling);
+  } else {
+    view.appendChild(panel);
+  }
+  return panel;
 }
 
 function renderPipelineStages(stages) {
@@ -727,6 +1023,19 @@ function detailRow(label, value, extraClass = '') {
 
 function statusBadge(label, tone) {
   return `<span class="status-badge ${escapeHtml(tone)}">${escapeHtml(label)}</span>`;
+}
+
+function humanizeJobType(jobType) {
+  return humanizeStatus(jobType || 'job');
+}
+
+function activityIcon(tone) {
+  const icons = {
+    green: '<svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>',
+    blue: '<svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path d="M3 12v3c0 1.657 3.134 3 7 3s7-1.343 7-3v-3c0 1.657-3.134 3-7 3s-7-1.343-7-3z"/><path d="M3 7v3c0 1.657 3.134 3 7 3s7-1.343 7-3V7c0 1.657-3.134 3-7 3S3 8.657 3 7z"/></svg>',
+    amber: '<svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>'
+  };
+  return icons[tone] || icons.blue;
 }
 
 function pipelineProgressPct(stage) {

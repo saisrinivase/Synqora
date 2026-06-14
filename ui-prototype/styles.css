@@ -916,6 +916,7 @@ body.authenticated .main-content { display: flex; }
 .stat-label { font-size: 0.75rem; color: var(--text-secondary); }
 .stat-trend { font-size: 0.7rem; width: 100%; padding-left: 52px; }
 .stat-trend.up { color: var(--accent-green); }
+.stat-trend.idle { color: var(--text-muted); }
 
 .connection-onboarding { margin-bottom: 24px; }
 .enterprise-surface { margin-bottom: 24px; }
@@ -1024,6 +1025,7 @@ body.authenticated .main-content { display: flex; }
 
 /* Project Cards */
 .project-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
+.project-grid .empty-state { grid-column: 1 / -1; }
 .project-card {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
@@ -1092,8 +1094,55 @@ body.authenticated .main-content { display: flex; }
 .heatmap-cell.low { background: rgba(16,185,129,0.15); color: var(--accent-green); }
 .heatmap-cell.med { background: rgba(245,158,11,0.15); color: var(--accent-amber); }
 .heatmap-cell.high { background: rgba(239,68,68,0.15); color: var(--accent-red); }
+.heatmap-cell.pending { background: rgba(148,163,184,0.10); color: var(--text-muted); }
 .heatmap-legend { display: flex; gap: 8px; margin-top: 10px; padding-left: 98px; }
+.heatmap-legend.pending-only { padding-left: 0; }
 .heatmap-project { font-size: 0.65rem; color: var(--text-muted); flex: 1; text-align: center; }
+
+/* Lifecycle Readiness */
+.view.stage-blocked > :not(.view-header):not(.lifecycle-state) { display: none; }
+.lifecycle-state {
+  margin-bottom: 20px;
+  min-height: 280px;
+  display: flex;
+  align-items: center;
+}
+.lifecycle-state[hidden] { display: none; }
+.lifecycle-state-content {
+  width: min(760px, 100%);
+}
+.lifecycle-state-content h3 {
+  font-size: 1.35rem;
+  margin: 10px 0 8px;
+}
+.lifecycle-state-content p {
+  color: var(--text-secondary);
+  max-width: 680px;
+  line-height: 1.6;
+}
+.lifecycle-readiness-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 22px;
+}
+.lifecycle-readiness-grid div {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  background: rgba(255,255,255,0.025);
+}
+.lifecycle-readiness-grid span {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  margin-bottom: 6px;
+}
+.lifecycle-readiness-grid strong {
+  display: block;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+}
 
 /* ===========================
    PROJECT PIPELINE
@@ -1560,6 +1609,9 @@ body.authenticated .main-content { display: flex; }
   .enterprise-surface-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+  .lifecycle-readiness-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .project-grid { grid-template-columns: 1fr; }
   .project-details-grid { grid-template-columns: 1fr; }
   .project-ops-grid { grid-template-columns: 1fr; }
@@ -1634,6 +1686,9 @@ body.authenticated .main-content { display: flex; }
   }
   .public-enterprise-grid,
   .enterprise-surface-grid {
+    grid-template-columns: 1fr;
+  }
+  .lifecycle-readiness-grid {
     grid-template-columns: 1fr;
   }
   .workflow-line {
