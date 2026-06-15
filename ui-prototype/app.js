@@ -22,7 +22,12 @@ const viewNames = {
   cutover: 'Cutover Control'
 };
 
+const THEME_STORAGE_KEY = 'synqora-theme';
+
+initTheme();
+
 document.addEventListener('DOMContentLoaded', async () => {
+  initThemeToggleHandlers();
   initNavigation();
   initCounters();
   initSparkline();
@@ -33,6 +38,34 @@ document.addEventListener('DOMContentLoaded', async () => {
   initAuthHandlers();
   await initAuthSession();
 });
+
+function initTheme() {
+  const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+  const theme = savedTheme === 'dark' ? 'dark' : 'light';
+  document.documentElement.dataset.theme = theme;
+  updateThemeToggleLabels(theme);
+}
+
+function initThemeToggleHandlers() {
+  const toggles = document.querySelectorAll('[data-theme-toggle]');
+  toggles.forEach((toggle) => {
+    toggle.addEventListener('click', () => {
+      const nextTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = nextTheme;
+      localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+      updateThemeToggleLabels(nextTheme);
+    });
+  });
+  updateThemeToggleLabels(document.documentElement.dataset.theme || 'light');
+}
+
+function updateThemeToggleLabels(theme) {
+  const toggles = document.querySelectorAll('[data-theme-toggle]');
+  toggles.forEach((toggle) => {
+    toggle.textContent = theme === 'dark' ? 'Light' : 'Dark';
+    toggle.setAttribute('aria-label', theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+  });
+}
 
 async function initAuthSession() {
   try {

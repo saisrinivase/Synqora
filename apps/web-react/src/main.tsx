@@ -68,6 +68,9 @@ type SessionPayload = {
 
 type ViewKey = 'dashboard' | 'project' | 'assessment' | 'converter' | 'dataload' | 'cdc' | 'validation' | 'cutover';
 type ReadinessViewKey = Exclude<ViewKey, 'dashboard' | 'project'>;
+type ThemeMode = 'light' | 'dark';
+
+const themeStorageKey = 'synqora-theme';
 
 const api = {
   async getSession(): Promise<SessionPayload> {
@@ -117,7 +120,13 @@ function App() {
   const [dashboard, setDashboard] = useState<DashboardPayload | null>(null);
   const [activeView, setActiveView] = useState<ViewKey>('dashboard');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [theme, setTheme] = useState<ThemeMode>(() => (localStorage.getItem(themeStorageKey) === 'dark' ? 'dark' : 'light'));
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem(themeStorageKey, theme);
+  }, [theme]);
 
   useEffect(() => {
     api.getSession().then(setSession).catch((err: Error) => setError(err.message));
@@ -183,7 +192,7 @@ function App() {
     <div className="app-shell">
       <Sidebar tenant={session.tenant} user={session.user} activeView={activeView} setActiveView={setActiveView} />
       <main className="workspace">
-        <Topbar view={activeView} />
+        <Topbar view={activeView} theme={theme} onToggleTheme={() => setTheme((current) => (current === 'dark' ? 'light' : 'dark'))} />
         {error && <div className="alert">{error}</div>}
         {activeView === 'dashboard' && (
           <DashboardView
@@ -265,12 +274,13 @@ function Sidebar({ tenant, user, activeView, setActiveView }: { tenant?: Tenant;
   );
 }
 
-function Topbar({ view }: { view: ViewKey }) {
+function Topbar({ view, theme, onToggleTheme }: { view: ViewKey; theme: ThemeMode; onToggleTheme: () => void }) {
   return (
     <header className="topbar">
       <span>Synqora</span>
       <span>/</span>
       <strong>{viewLabels[view]}</strong>
+      <button type="button" className="theme-switch" onClick={onToggleTheme}>{theme === 'dark' ? 'Light' : 'Dark'}</button>
     </header>
   );
 }
