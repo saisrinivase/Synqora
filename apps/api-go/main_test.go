@@ -38,8 +38,16 @@ func TestOracleConnectionQueuesAssessment(t *testing.T) {
 
 	dashboard := store.Dashboard(ctx)
 	jobs := dashboard["jobs"].([]Job)
+	connections := dashboard["connections"].([]Connection)
+	summary := dashboard["summary"].(map[string]interface{})
 	if len(jobs) != 1 {
 		t.Fatalf("expected 1 queued job, got %d", len(jobs))
+	}
+	if len(connections) != 1 {
+		t.Fatalf("expected 1 database connection, got %d", len(connections))
+	}
+	if summary["databaseConnections"] != 1 {
+		t.Fatalf("expected dashboard database connection count of 1, got %#v", summary["databaseConnections"])
 	}
 	if jobs[0].JobType != "validate_oracle_connection" {
 		t.Fatalf("unexpected job type: %s", jobs[0].JobType)

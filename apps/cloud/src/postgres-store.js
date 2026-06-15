@@ -51,6 +51,7 @@ export class SynqoraPostgresStore {
     const projects = await this.listProjects(context);
     const jobs = await this.listJobs(context);
     const agents = await this.listAgents(context);
+    const connections = await this.listConnections(context);
 
     const activeProjects = projects.filter((project) => project.status !== 'archived');
 
@@ -67,12 +68,39 @@ export class SynqoraPostgresStore {
           activeProjects.reduce((sum, project) => sum + (project.dataMigratedTb ?? 0), 0).toFixed(1)
         ),
         registeredAgents: agents.filter((agent) => agent.status !== 'retired').length,
+        databaseConnections: connections.length,
+        sourceConnections: connections.filter((connection) => connection.environmentType === 'source').length,
+        targetConnections: connections.filter((connection) => connection.environmentType === 'target').length,
         queuedJobs: jobs.filter((job) => job.status === 'queued').length,
         runningJobs: jobs.filter((job) => job.status === 'running').length
       },
       projects,
-      jobs
+      jobs,
+      connections
     };
+  }
+
+  async listConnections(context = null) {
+    const tenantId = context?.tenant?.tenantId;
+    return runJsonArray(`
+      SELECT COALESCE(json_agg(row_to_json(e) ORDER BY e."createdAt"), '[]'::json)
+      FROM (
+        SELECT environment_id AS "environmentId",
+               tenant_id AS "tenantId",
+               project_id AS "projectId",
+               environment_name AS "environmentName",
+               environment_type AS "environmentType",
+               network_zone AS "networkZone",
+               status,
+               cloud_provider AS "cloudProvider",
+               region_name AS "regionName",
+               settings_json AS "settingsJson",
+               created_at AS "createdAt",
+               updated_at AS "updatedAt"
+        FROM synqora_core.environment
+        WHERE tenant_id = ${sqlString(tenantId)}
+      ) e;
+    `);
   }
 
   async listProjects(context = null) {

@@ -13,6 +13,7 @@ const appState = {
 
 const viewNames = {
   dashboard: 'Dashboard',
+  services: 'Services',
   project: 'Project Pipeline',
   assessment: 'Assessment',
   converter: 'Schema Converter',
@@ -35,6 +36,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initFilterHandlers();
   initActiveProjectsCardHandler();
   initProjectCardHandlers();
+  initServiceCardHandlers();
   initAuthHandlers();
   await initAuthSession();
 });
@@ -362,6 +364,7 @@ async function initDashboardApi() {
     renderConnectionProjectOptions(payload.projects || []);
     renderWorkspaceLabels(payload.tenant || {});
     renderDashboardEvidence(payload);
+    renderServicesConsole(payload);
 
     const projects = payload.projects || [];
     const selectedProjectStillVisible = projects.some((project) => project.projectId === appState.selectedProjectId);
@@ -485,6 +488,18 @@ function initProjectCardHandlers() {
   });
 }
 
+function initServiceCardHandlers() {
+  const grid = document.getElementById('servicesGrid');
+  if (!grid) return;
+
+  grid.addEventListener('click', (event) => {
+    const card = event.target.closest('.service-card[data-service-view]');
+    if (!card) return;
+    const view = card.dataset.serviceView;
+    if (view) setActiveView(view);
+  });
+}
+
 function renderDashboardProjects(projects) {
   const grid = document.getElementById('projectGrid');
   if (!grid) return;
@@ -538,6 +553,117 @@ function renderDashboardEvidence(payload) {
 
   renderActivityFeed(projects, jobs);
   renderRiskHeatmap(projects);
+}
+
+function renderServicesConsole(payload) {
+  const summary = payload.summary || {};
+  const projects = payload.projects || [];
+  const jobs = payload.jobs || [];
+  const connections = payload.connections || [];
+
+  setText('serviceDatabaseCount', String(summary.databaseConnections ?? connections.length));
+  setText('serviceProjectCount', String(summary.activeProjects ?? projects.length));
+  setText('serviceJobCount', String(summary.queuedJobs ?? jobs.filter((job) => job.status === 'queued').length));
+
+  const serviceCards = [
+    {
+      name: 'Database Connections',
+      description: 'Reusable Oracle and PostgreSQL endpoints under this tenant.',
+      metric: `${connections.length} endpoints`,
+      action: 'Create / troubleshoot',
+      view: 'services'
+    },
+    {
+      name: 'Migration Projects',
+      description: 'Business wrappers for assessment, conversion, load, CDC, validation, and cutover.',
+      metric: `${projects.length} projects`,
+      action: 'Open portfolio',
+      view: 'dashboard'
+    },
+    {
+      name: 'Agents & Connectivity',
+      description: 'Customer-side execution plane for network checks, secrets, discovery, and validation.',
+      metric: `${summary.registeredAgents || 0} agents`,
+      action: 'Review agent readiness',
+      view: 'services'
+    },
+    {
+      name: 'Assessment',
+      description: 'Oracle source discovery, migration risk detection, and evidence snapshots.',
+      metric: `${jobs.filter((job) => job.jobType?.includes('assessment') || job.jobType?.includes('discover')).length} jobs`,
+      action: 'Open assessment',
+      view: 'assessment'
+    },
+    {
+      name: 'Schema Conversion',
+      description: 'Datatype, DDL, PL/SQL, trigger, sequence, and partition conversion workflow.',
+      metric: `${summary.averageConversionRatePct || 0}% converted`,
+      action: 'Open converter',
+      view: 'converter'
+    },
+    {
+      name: 'Data Load & CDC',
+      description: 'Full-load chunking, replication readiness, lag tracking, and retry evidence.',
+      metric: `${summary.dataMigratedTb || 0} TB`,
+      action: 'Open load plan',
+      view: 'dataload'
+    },
+    {
+      name: 'Validation',
+      description: 'Schema, code, row-count, checksum, and business-rule comparison reports.',
+      metric: `${jobs.filter((job) => job.jobType?.includes('validation')).length} checks`,
+      action: 'Open validation',
+      view: 'validation'
+    },
+    {
+      name: 'Evidence & Audit',
+      description: 'Issue history, rule decisions, approval trail, cutover gates, and remediation notes.',
+      metric: `${jobs.length} events`,
+      action: 'Open cutover control',
+      view: 'cutover'
+    }
+  ];
+
+  const grid = document.getElementById('servicesGrid');
+  if (grid) {
+    grid.innerHTML = serviceCards.map((service) => `
+      <button class="service-card" type="button" data-service-view="${escapeHtml(service.view)}">
+        <span>${escapeHtml(service.metric)}</span>
+        <strong>${escapeHtml(service.name)}</strong>
+        <p>${escapeHtml(service.description)}</p>
+        <small>${escapeHtml(service.action)}</small>
+      </button>
+    `).join('');
+  }
+
+  const projectById = new Map(projects.map((project) => [project.projectId, project]));
+  const body = document.getElementById('databaseInventoryBody');
+  if (!body) return;
+
+  if (!connections.length) {
+    body.innerHTML = '<tr><td colspan="6">No database connections yet. Add an Oracle source connection to start assessment.</td></tr>';
+    return;
+  }
+
+  body.innerHTML = connections.map((connection) => {
+    const settings = connection.settingsJson || {};
+    const project = projectById.get(connection.projectId);
+    return `
+      <tr>
+        <td><strong>${escapeHtml(connection.environmentName || 'Database')}</strong><small>${escapeHtml(settings.engineVersion || 'Engine pending')}</small></td>
+        <td>${escapeHtml(humanizeStatus(connection.environmentType || 'database'))}</td>
+        <td><span class="status-badge ${escapeHtml(statusTone(connection.status))}">${escapeHtml(humanizeStatus(connection.status || 'pending'))}</span></td>
+        <td>${escapeHtml(project?.projectCode || 'Unassigned')}</td>
+        <td>${escapeHtml(settings.host || settings.hostName || 'Host pending')}<small>${escapeHtml(settings.serviceName || '')}</small></td>
+        <td>${escapeHtml(connection.networkZone || 'Agent zone pending')}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
 }
 
 function setStatTrend(id, text, tone = 'idle') {

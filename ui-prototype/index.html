@@ -281,6 +281,10 @@
         <svg viewBox="0 0 20 20" fill="currentColor"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 6a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zm10 0a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg>
         <span>Dashboard</span>
       </a>
+      <a href="#" class="nav-item" data-view="services">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M4 3a2 2 0 00-2 2v3a2 2 0 002 2h3a2 2 0 002-2V5a2 2 0 00-2-2H4zm9 0a2 2 0 00-2 2v3a2 2 0 002 2h3a2 2 0 002-2V5a2 2 0 00-2-2h-3zM4 12a2 2 0 00-2 2v1a2 2 0 002 2h3a2 2 0 002-2v-1a2 2 0 00-2-2H4zm9 0a2 2 0 00-2 2v1a2 2 0 002 2h3a2 2 0 002-2v-1a2 2 0 00-2-2h-3z"/></svg>
+        <span>Services</span>
+      </a>
       <a href="#" class="nav-item" data-view="project">
         <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/></svg>
         <span>Project Pipeline</span>
@@ -542,6 +546,59 @@
           <div id="riskHeatmapContent">
             <div class="empty-state small">Risk scoring will appear after Oracle discovery and assessment evidence is collected.</div>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== SERVICES VIEW ===================== -->
+    <section class="view" id="view-services">
+      <div class="view-header">
+        <div>
+          <h1>Synqora Services</h1>
+          <p class="view-subtitle">One product console for all migration databases, projects, jobs, agents, and evidence under this customer tenant.</p>
+        </div>
+        <button class="btn btn-primary" data-open-modal="database-connection">Create Database Connection</button>
+      </div>
+
+      <div class="services-hero glass-card">
+        <div>
+          <span class="surface-kicker">Tenant service catalog</span>
+          <h2>Everything is scoped to your organization.</h2>
+          <p>Use this page like an AWS or Microsoft services page, but restricted to Synqora capabilities. Create many database endpoints under the same account, then attach them to migration projects when needed.</p>
+        </div>
+        <div class="services-counts">
+          <div><span id="serviceDatabaseCount">0</span><small>Database endpoints</small></div>
+          <div><span id="serviceProjectCount">0</span><small>Projects</small></div>
+          <div><span id="serviceJobCount">0</span><small>Queued jobs</small></div>
+        </div>
+      </div>
+
+      <div class="services-grid" id="servicesGrid"></div>
+
+      <div class="glass-card service-inventory">
+        <div class="service-inventory-header">
+          <div>
+            <h3>Database Inventory</h3>
+            <p class="table-note">Reusable Oracle and PostgreSQL connection profiles for this tenant. Troubleshooting starts here: status, project link, network zone, host, and credential reference.</p>
+          </div>
+          <button class="btn btn-ghost" data-open-modal="database-connection">Add Database</button>
+        </div>
+        <div class="inventory-table-wrap">
+          <table class="inventory-table">
+            <thead>
+              <tr>
+                <th>Database</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Project</th>
+                <th>Host / Service</th>
+                <th>Agent Zone</th>
+              </tr>
+            </thead>
+            <tbody id="databaseInventoryBody">
+              <tr><td colspan="6">No database connections yet.</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </section>

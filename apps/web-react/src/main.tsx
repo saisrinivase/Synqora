@@ -41,6 +41,16 @@ type Job = {
   maxAttempts: number;
 };
 
+type Connection = {
+  environmentId: string;
+  projectId: string;
+  environmentName: string;
+  environmentType: string;
+  status: string;
+  networkZone: string;
+  settingsJson: Record<string, unknown>;
+};
+
 type DashboardPayload = {
   tenant: Tenant;
   summary: {
@@ -50,9 +60,13 @@ type DashboardPayload = {
     dataMigratedTb: number;
     queuedJobs: number;
     runningJobs: number;
+    databaseConnections?: number;
+    sourceConnections?: number;
+    targetConnections?: number;
   };
   projects: Project[];
   jobs: Job[];
+  connections?: Connection[];
 };
 
 type SessionPayload = {
@@ -66,8 +80,8 @@ type SessionPayload = {
   };
 };
 
-type ViewKey = 'dashboard' | 'project' | 'assessment' | 'converter' | 'dataload' | 'cdc' | 'validation' | 'cutover';
-type ReadinessViewKey = Exclude<ViewKey, 'dashboard' | 'project'>;
+type ViewKey = 'dashboard' | 'services' | 'project' | 'assessment' | 'converter' | 'dataload' | 'cdc' | 'validation' | 'cutover';
+type ReadinessViewKey = Exclude<ViewKey, 'dashboard' | 'services' | 'project'>;
 type ThemeMode = 'light' | 'dark';
 
 const themeStorageKey = 'synqora-theme';
@@ -207,8 +221,9 @@ function App() {
             onCreateConnection={handleCreateConnection}
           />
         )}
+        {activeView === 'services' && <ServicesView payload={dashboard} setActiveView={setActiveView} onCreateConnection={handleCreateConnection} />}
         {activeView === 'project' && <ProjectView project={selectedProject} jobs={projectJobs} onCreateConnection={handleCreateConnection} />}
-        {activeView !== 'dashboard' && activeView !== 'project' && <ReadinessView view={activeView as ReadinessViewKey} project={selectedProject} jobs={projectJobs} />}
+        {activeView !== 'dashboard' && activeView !== 'services' && activeView !== 'project' && <ReadinessView view={activeView as ReadinessViewKey} project={selectedProject} jobs={projectJobs} />}
       </main>
     </div>
   );
@@ -249,7 +264,7 @@ function Shell({ message }: { message: string }) {
 
 function Sidebar({ tenant, user, activeView, setActiveView }: { tenant?: Tenant; user?: User; activeView: ViewKey; setActiveView: (view: ViewKey) => void }) {
   const groups: Array<{ label: string; items: Array<[ViewKey, string]> }> = [
-    { label: 'Overview', items: [['dashboard', 'Dashboard'], ['project', 'Project Pipeline']] },
+    { label: 'Overview', items: [['dashboard', 'Dashboard'], ['services', 'Services'], ['project', 'Project Pipeline']] },
     { label: 'Migration', items: [['assessment', 'Assessment'], ['converter', 'Schema Converter'], ['dataload', 'Data Load'], ['cdc', 'CDC / Replication']] },
     { label: 'Operations', items: [['validation', 'Validation'], ['cutover', 'Cutover Control']] }
   ];
@@ -271,6 +286,77 @@ function Sidebar({ tenant, user, activeView, setActiveView }: { tenant?: Tenant;
       <div className="tenant-chip">{tenant?.name || 'Tenant'}</div>
       <div className="user-chip">{user?.displayName || user?.email || 'User'}</div>
     </aside>
+  );
+}
+
+function ServicesView({ payload, setActiveView, onCreateConnection }: { payload: DashboardPayload | null; setActiveView: (view: ViewKey) => void; onCreateConnection: (input: Record<string, string>) => Promise<void> }) {
+  const projects = payload?.projects || [];
+  const jobs = payload?.jobs || [];
+  const connections = payload?.connections || [];
+  const projectById = new Map(projects.map((project) => [project.projectId, project]));
+  const services: Array<{ name: string; description: string; metric: string; view: ViewKey }> = [
+    { name: 'Database Connections', description: 'Reusable Oracle and PostgreSQL endpoints scoped to this tenant.', metric: `${connections.length} endpoints`, view: 'services' },
+    { name: 'Migration Projects', description: 'Business wrappers for assessment, conversion, load, CDC, validation, and cutover.', metric: `${projects.length} projects`, view: 'dashboard' },
+    { name: 'Agents & Connectivity', description: 'Customer-side execution plane for network checks, secrets, discovery, and validation.', metric: 'Agent ready', view: 'services' },
+    { name: 'Assessment', description: 'Oracle source discovery, risk detection, and evidence snapshots.', metric: `${jobs.filter((job) => job.jobType.includes('assessment') || job.jobType.includes('discover')).length} jobs`, view: 'assessment' },
+    { name: 'Schema Conversion', description: 'DDL, datatype, PL/SQL, trigger, sequence, and partition conversion.', metric: `${payload?.summary.averageConversionRatePct || 0}%`, view: 'converter' },
+    { name: 'Data Load & CDC', description: 'Full-load chunking, replication readiness, lag tracking, and retries.', metric: `${payload?.summary.dataMigratedTb || 0} TB`, view: 'dataload' },
+    { name: 'Validation', description: 'Schema, code, row-count, checksum, and business-rule comparison.', metric: `${jobs.filter((job) => job.jobType.includes('validation')).length} checks`, view: 'validation' },
+    { name: 'Evidence & Audit', description: 'Issue history, rule decisions, approvals, cutover gates, and remediation notes.', metric: `${jobs.length} events`, view: 'cutover' }
+  ];
+
+  return (
+    <section className="view">
+      <div className="view-header">
+        <div>
+          <h1>Synqora Services</h1>
+          <p>One product console for all migration databases, projects, jobs, agents, and evidence under this customer tenant.</p>
+        </div>
+      </div>
+      <section className="services-hero panel">
+        <div>
+          <span className="eyebrow">Tenant service catalog</span>
+          <h2>Everything is scoped to your organization.</h2>
+          <p>Create many database endpoints under the same account, then attach them to migration projects when needed.</p>
+        </div>
+        <div className="services-counts">
+          <div><strong>{connections.length}</strong><span>Database endpoints</span></div>
+          <div><strong>{projects.length}</strong><span>Projects</span></div>
+          <div><strong>{payload?.summary.queuedJobs || 0}</strong><span>Queued jobs</span></div>
+        </div>
+      </section>
+      <div className="services-grid">
+        {services.map((service) => (
+          <button key={service.name} type="button" className="service-card" onClick={() => setActiveView(service.view)}>
+            <span>{service.metric}</span>
+            <strong>{service.name}</strong>
+            <p>{service.description}</p>
+          </button>
+        ))}
+      </div>
+      <section className="panel">
+        <h2>Database Inventory</h2>
+        <p className="muted">Reusable Oracle and PostgreSQL connection profiles for this tenant. Troubleshooting starts here.</p>
+        {!connections.length && <EmptyState text="No database connections yet. Create a project, then add an Oracle source connection." />}
+        {connections.map((connection) => {
+          const settings = connection.settingsJson || {};
+          const project = projectById.get(connection.projectId);
+          return (
+            <div className="inventory-row" key={connection.environmentId}>
+              <strong>{connection.environmentName}</strong>
+              <span>{humanizeStatus(connection.environmentType)}</span>
+              <span>{humanizeStatus(connection.status)}</span>
+              <span>{project?.projectCode || 'Unassigned'}</span>
+              <span>{String(settings.host || settings.hostName || 'Host pending')}</span>
+              <span>{connection.networkZone || 'Agent zone pending'}</span>
+            </div>
+          );
+        })}
+      </section>
+      <div className="workspace-grid">
+        <ConnectionCreatePanel disabled={!projects.length} onCreateConnection={onCreateConnection} />
+      </div>
+    </section>
   );
 }
 
@@ -450,6 +536,7 @@ function ReadinessGate({ title, text, facts = [] }: { title: string; text: strin
 
 const viewLabels: Record<ViewKey, string> = {
   dashboard: 'Dashboard',
+  services: 'Services',
   project: 'Project Pipeline',
   assessment: 'Assessment',
   converter: 'Schema Converter',
@@ -459,7 +546,7 @@ const viewLabels: Record<ViewKey, string> = {
   cutover: 'Cutover Control'
 };
 
-const readinessCopy: Record<Exclude<ViewKey, 'dashboard' | 'project'>, { title: string; projectText: string; gate: string }> = {
+const readinessCopy: Record<ReadinessViewKey, { title: string; projectText: string; gate: string }> = {
   assessment: {
     title: 'Assessment waits for Oracle source evidence',
     projectText: 'An agent must validate connectivity and collect Oracle dictionary evidence before assessment results are shown.',

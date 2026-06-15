@@ -269,6 +269,7 @@ func (s *Store) Dashboard(ctx AuthContext) map[string]interface{} {
 
 	projects := s.tenantProjects(ctx.Tenant.TenantID)
 	jobs := s.tenantJobs(ctx.Tenant.TenantID)
+	connections := s.tenantConnections(ctx.Tenant.TenantID)
 	discovered := 0
 	converted := 0
 	dataTB := 0.0
@@ -290,9 +291,13 @@ func (s *Store) Dashboard(ctx AuthContext) map[string]interface{} {
 			"dataMigratedTb":           dataTB,
 			"queuedJobs":               countJobs(jobs, "queued"),
 			"runningJobs":              countJobs(jobs, "running"),
+			"databaseConnections":      len(connections),
+			"sourceConnections":        countConnections(connections, "source"),
+			"targetConnections":        countConnections(connections, "target"),
 		},
-		"projects": projects,
-		"jobs":     jobs,
+		"projects":    projects,
+		"jobs":        jobs,
+		"connections": connections,
 	}
 }
 
@@ -512,6 +517,16 @@ func (s *Store) tenantJobs(tenantID string) []Job {
 	for _, job := range s.jobs {
 		if job.TenantID == tenantID {
 			items = append(items, job)
+		}
+	}
+	return items
+}
+
+func (s *Store) tenantConnections(tenantID string) []Connection {
+	items := []Connection{}
+	for _, connection := range s.connections {
+		if connection.TenantID == tenantID {
+			items = append(items, connection)
 		}
 	}
 	return items
@@ -820,6 +835,16 @@ func countJobs(jobs []Job, status string) int {
 	count := 0
 	for _, job := range jobs {
 		if job.Status == status {
+			count++
+		}
+	}
+	return count
+}
+
+func countConnections(connections []Connection, environmentType string) int {
+	count := 0
+	for _, connection := range connections {
+		if connection.EnvironmentType == environmentType {
 			count++
 		}
 	}

@@ -125,6 +125,7 @@ export class SynqoraStore {
       (project) => project.tenantId === tenant.tenantId && project.status !== 'archived'
     );
     const tenantJobs = this.state.jobs.filter((job) => job.tenantId === tenant.tenantId);
+    const tenantConnections = this.state.environments.filter((environment) => environment.tenantId === tenant.tenantId);
     const queuedJobs = tenantJobs.filter((job) => job.status === 'queued').length;
     const runningJobs = tenantJobs.filter((job) => job.status === 'running').length;
 
@@ -143,11 +144,15 @@ export class SynqoraStore {
         registeredAgents: this.state.agentInstances.filter(
           (agent) => agent.tenantId === tenant.tenantId && agent.status !== 'retired'
         ).length,
+        databaseConnections: tenantConnections.length,
+        sourceConnections: tenantConnections.filter((connection) => connection.environmentType === 'source').length,
+        targetConnections: tenantConnections.filter((connection) => connection.environmentType === 'target').length,
         queuedJobs,
         runningJobs
       },
       projects: deepClone(activeProjects),
-      jobs: deepClone(tenantJobs)
+      jobs: deepClone(tenantJobs),
+      connections: deepClone(tenantConnections)
     };
   }
 
