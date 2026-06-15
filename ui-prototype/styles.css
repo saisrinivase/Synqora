@@ -1012,6 +1012,123 @@ body.authenticated .main-content { display: flex; }
 .stat-trend.up { color: var(--accent-green); }
 .stat-trend.idle { color: var(--text-muted); }
 
+/* Organizations Console */
+.org-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.6fr);
+  gap: 24px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+.org-hero h2 {
+  font-size: clamp(1.5rem, 3vw, 2.45rem);
+  letter-spacing: -0.04em;
+  margin: 8px 0 10px;
+}
+.org-hero p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+  max-width: 820px;
+}
+.org-id-card {
+  padding: 18px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  background: var(--gradient-surface);
+}
+.org-id-card span,
+.org-id-card small {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+}
+.org-id-card strong {
+  display: block;
+  margin: 8px 0;
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  word-break: break-word;
+}
+.org-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.org-metric-grid .glass-card {
+  padding: 16px;
+}
+.org-metric-grid span {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+.org-metric-grid small {
+  color: var(--text-secondary);
+}
+.org-layout {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.75fr) minmax(0, 1.25fr);
+  gap: 18px;
+}
+.org-create-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+.org-create-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+.org-account-grid {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+.org-account-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: rgba(255,255,255,0.38);
+}
+[data-theme="dark"] .org-account-card {
+  background: rgba(255,255,255,0.035);
+}
+.org-account-card span {
+  color: var(--accent-cyan);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+}
+.org-account-card strong {
+  display: block;
+  margin: 5px 0;
+}
+.org-account-card p {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
+.org-account-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+  align-content: flex-start;
+  min-width: 180px;
+}
+.org-account-meta small {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--gradient-surface);
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+}
+
 /* Services Console */
 .services-hero {
   display: grid;
@@ -1769,6 +1886,7 @@ body.authenticated .main-content { display: flex; }
     border-radius: 24px;
   }
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .org-metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .services-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .connection-onboarding-grid { grid-template-columns: 1fr; }
   .project-grid { grid-template-columns: repeat(2, 1fr); }
@@ -1823,6 +1941,10 @@ body.authenticated .main-content { display: flex; }
   .services-hero {
     grid-template-columns: 1fr;
   }
+  .org-hero,
+  .org-layout {
+    grid-template-columns: 1fr;
+  }
   .lifecycle-readiness-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1850,8 +1972,15 @@ body.authenticated .main-content { display: flex; }
     flex: 1;
   }
   .services-grid,
+  .org-metric-grid,
   .services-counts {
     grid-template-columns: 1fr;
+  }
+  .org-account-card {
+    flex-direction: column;
+  }
+  .org-account-meta {
+    justify-content: flex-start;
   }
   .public-hero,
   .public-section {

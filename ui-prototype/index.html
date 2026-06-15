@@ -281,6 +281,10 @@
         <svg viewBox="0 0 20 20" fill="currentColor"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 6a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zm10 0a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg>
         <span>Dashboard</span>
       </a>
+      <a href="#" class="nav-item" data-view="organizations">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a4 4 0 00-4 4v1H5a2 2 0 00-2 2v7a2 2 0 002 2h10a2 2 0 002-2V9a2 2 0 00-2-2h-1V6a4 4 0 00-4-4zm-2 5V6a2 2 0 114 0v1H8z"/></svg>
+        <span>Organizations</span>
+      </a>
       <a href="#" class="nav-item" data-view="services">
         <svg viewBox="0 0 20 20" fill="currentColor"><path d="M4 3a2 2 0 00-2 2v3a2 2 0 002 2h3a2 2 0 002-2V5a2 2 0 00-2-2H4zm9 0a2 2 0 00-2 2v3a2 2 0 002 2h3a2 2 0 002-2V5a2 2 0 00-2-2h-3zM4 12a2 2 0 00-2 2v1a2 2 0 002 2h3a2 2 0 002-2v-1a2 2 0 00-2-2H4zm9 0a2 2 0 00-2 2v1a2 2 0 002 2h3a2 2 0 002-2v-1a2 2 0 00-2-2h-3z"/></svg>
         <span>Services</span>
@@ -546,6 +550,56 @@
           <div id="riskHeatmapContent">
             <div class="empty-state small">Risk scoring will appear after Oracle discovery and assessment evidence is collected.</div>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== ORGANIZATIONS VIEW ===================== -->
+    <section class="view" id="view-organizations">
+      <div class="view-header">
+        <div>
+          <h1>Organizations & Accounts</h1>
+          <p class="view-subtitle">Customer isolation starts here. Each organization owns its accounts, tenants, workspaces, users, policies, and migration inventory.</p>
+        </div>
+      </div>
+
+      <div class="org-hero glass-card">
+        <div>
+          <span class="surface-kicker">Customer organization</span>
+          <h2 id="organizationNameValue">Synqora Organization</h2>
+          <p>Think of this like AWS Organizations: a customer organization can own multiple isolated Synqora accounts or tenants. Each account can carry its own business unit, project portfolio, database connections, agents, evidence, and policies.</p>
+        </div>
+        <div class="org-id-card">
+          <span>Organization Account ID</span>
+          <strong id="organizationAccountIdValue">acct-local</strong>
+          <small>Use this boundary for support, audit, billing, troubleshooting, and customer isolation.</small>
+        </div>
+      </div>
+
+      <div class="org-metric-grid">
+        <div class="glass-card"><span id="organizationTenantCount">0</span><small>Accounts / Tenants</small></div>
+        <div class="glass-card"><span id="organizationProjectCount">0</span><small>Migration Projects</small></div>
+        <div class="glass-card"><span id="organizationDatabaseCount">0</span><small>Database Connections</small></div>
+        <div class="glass-card"><span id="organizationJobCount">0</span><small>Workflow Jobs</small></div>
+      </div>
+
+      <div class="org-layout">
+        <div class="glass-card">
+          <h3>Create Account / Tenant</h3>
+          <p class="table-note">Use this to model separate business units, regions, portfolios, or environments under the same customer organization.</p>
+          <form class="org-create-form" id="tenantCreateForm">
+            <label>Account / Tenant Name<input class="form-input" id="tenantNameInput" placeholder="Finance Migration Account"></label>
+            <label>Business Unit<input class="form-input" id="tenantBusinessUnitInput" placeholder="Finance"></label>
+            <label>Home Region<input class="form-input" id="tenantRegionInput" placeholder="us-east-1"></label>
+            <label>Purpose<input class="form-input" id="tenantEnvironmentInput" placeholder="assessment / production / sandbox"></label>
+            <button class="btn btn-primary" type="submit">Create Tenant</button>
+          </form>
+        </div>
+
+        <div class="glass-card">
+          <h3>Organization Account Hierarchy</h3>
+          <p class="table-note">Customers see only accounts under their own organization. Synqora operators can troubleshoot by organization account ID, then account/tenant ID.</p>
+          <div class="org-account-grid" id="organizationTenantGrid"></div>
         </div>
       </div>
     </section>

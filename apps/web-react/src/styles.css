@@ -328,6 +328,88 @@ label {
   margin: 22px 0;
 }
 
+.org-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.65fr);
+  align-items: center;
+}
+
+.org-hero h2 {
+  margin: 6px 0 8px;
+  font-size: clamp(1.5rem, 3vw, 2.45rem);
+  letter-spacing: -0.05em;
+}
+
+.org-hero p {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.org-id-card {
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: rgba(15, 118, 110, 0.08);
+}
+
+.org-id-card span,
+.org-id-card small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+.org-id-card strong {
+  display: block;
+  margin: 8px 0;
+  word-break: break-word;
+}
+
+.org-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin: 18px 0;
+}
+
+.org-metric-grid strong {
+  display: block;
+  font-size: 1.6rem;
+}
+
+.org-metric-grid span {
+  color: var(--muted);
+}
+
+.org-layout {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.75fr) minmax(0, 1.25fr);
+  gap: 18px;
+}
+
+.org-account-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.org-account-card {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel-strong);
+}
+
+.org-account-card span {
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.org-account-card p,
+.org-account-card small {
+  color: var(--muted);
+}
+
 .services-hero {
   display: grid;
   grid-template-columns: minmax(0, 1.3fr) minmax(260px, 0.7fr);
@@ -548,6 +630,9 @@ label {
   .metric-row,
   .workspace-grid,
   .project-grid,
+  .org-hero,
+  .org-metric-grid,
+  .org-layout,
   .services-grid,
   .services-hero,
   .services-counts,

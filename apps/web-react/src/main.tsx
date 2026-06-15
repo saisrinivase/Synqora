@@ -80,11 +80,21 @@ type SessionPayload = {
   };
 };
 
-type ViewKey = 'dashboard' | 'services' | 'project' | 'assessment' | 'converter' | 'dataload' | 'cdc' | 'validation' | 'cutover';
-type ReadinessViewKey = Exclude<ViewKey, 'dashboard' | 'services' | 'project'>;
+type OrganizationTenant = {
+  id: string;
+  name: string;
+  businessUnit: string;
+  region: string;
+  purpose: string;
+  status: string;
+};
+
+type ViewKey = 'dashboard' | 'organizations' | 'services' | 'project' | 'assessment' | 'converter' | 'dataload' | 'cdc' | 'validation' | 'cutover';
+type ReadinessViewKey = Exclude<ViewKey, 'dashboard' | 'organizations' | 'services' | 'project'>;
 type ThemeMode = 'light' | 'dark';
 
 const themeStorageKey = 'synqora-theme';
+const organizationTenantsStorageKey = 'synqora-org-tenants';
 
 const api = {
   async getSession(): Promise<SessionPayload> {
@@ -142,11 +152,20 @@ function formatNetworkError(error: unknown) {
   return message || 'Synqora API request failed.';
 }
 
+function loadStoredOrganizationTenants(): OrganizationTenant[] {
+  try {
+    return JSON.parse(localStorage.getItem(organizationTenantsStorageKey) || '[]') as OrganizationTenant[];
+  } catch {
+    return [];
+  }
+}
+
 function App() {
   const [session, setSession] = useState<SessionPayload | null>(null);
   const [dashboard, setDashboard] = useState<DashboardPayload | null>(null);
   const [activeView, setActiveView] = useState<ViewKey>('dashboard');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [organizationTenants, setOrganizationTenants] = useState<OrganizationTenant[]>(() => loadStoredOrganizationTenants());
   const [theme, setTheme] = useState<ThemeMode>(() => (localStorage.getItem(themeStorageKey) === 'dark' ? 'dark' : 'light'));
   const [error, setError] = useState('');
 
@@ -163,6 +182,22 @@ function App() {
     if (!session?.authenticated) return;
     refreshDashboard().catch((err: Error) => setError(err.message));
   }, [session?.authenticated]);
+
+  useEffect(() => {
+    if (!session?.tenant || organizationTenants.length > 0) return;
+    setOrganizationTenants([{
+      id: session.tenant.tenantId,
+      name: session.tenant.name,
+      businessUnit: 'Shared Services',
+      region: 'us-east-1',
+      purpose: 'control-plane',
+      status: 'active'
+    }]);
+  }, [session?.tenant, organizationTenants.length]);
+
+  useEffect(() => {
+    localStorage.setItem(organizationTenantsStorageKey, JSON.stringify(organizationTenants));
+  }, [organizationTenants]);
 
   async function refreshDashboard() {
     const payload = await api.dashboard();
@@ -221,6 +256,14 @@ function App() {
       <main className="workspace">
         <Topbar view={activeView} theme={theme} onToggleTheme={() => setTheme((current) => (current === 'dark' ? 'light' : 'dark'))} />
         {error && <div className="alert">{error}</div>}
+        {activeView === 'organizations' && (
+          <OrganizationsView
+            payload={dashboard}
+            session={session}
+            tenants={organizationTenants}
+            onCreateTenant={(tenant) => setOrganizationTenants((current) => [...current, tenant])}
+          />
+        )}
         {activeView === 'dashboard' && (
           <DashboardView
             payload={dashboard}
@@ -236,7 +279,7 @@ function App() {
         )}
         {activeView === 'services' && <ServicesView payload={dashboard} setActiveView={setActiveView} onCreateConnection={handleCreateConnection} />}
         {activeView === 'project' && <ProjectView project={selectedProject} jobs={projectJobs} onCreateConnection={handleCreateConnection} />}
-        {activeView !== 'dashboard' && activeView !== 'services' && activeView !== 'project' && <ReadinessView view={activeView as ReadinessViewKey} project={selectedProject} jobs={projectJobs} />}
+        {activeView !== 'dashboard' && activeView !== 'organizations' && activeView !== 'services' && activeView !== 'project' && <ReadinessView view={activeView as ReadinessViewKey} project={selectedProject} jobs={projectJobs} />}
       </main>
     </div>
   );
@@ -277,7 +320,7 @@ function Shell({ message }: { message: string }) {
 
 function Sidebar({ tenant, user, activeView, setActiveView }: { tenant?: Tenant; user?: User; activeView: ViewKey; setActiveView: (view: ViewKey) => void }) {
   const groups: Array<{ label: string; items: Array<[ViewKey, string]> }> = [
-    { label: 'Overview', items: [['dashboard', 'Dashboard'], ['services', 'Services'], ['project', 'Project Pipeline']] },
+    { label: 'Overview', items: [['dashboard', 'Dashboard'], ['organizations', 'Organizations'], ['services', 'Services'], ['project', 'Project Pipeline']] },
     { label: 'Migration', items: [['assessment', 'Assessment'], ['converter', 'Schema Converter'], ['dataload', 'Data Load'], ['cdc', 'CDC / Replication']] },
     { label: 'Operations', items: [['validation', 'Validation'], ['cutover', 'Cutover Control']] }
   ];
@@ -299,6 +342,86 @@ function Sidebar({ tenant, user, activeView, setActiveView }: { tenant?: Tenant;
       <div className="tenant-chip">{tenant?.name || 'Tenant'}</div>
       <div className="user-chip">{user?.displayName || user?.email || 'User'}</div>
     </aside>
+  );
+}
+
+function OrganizationsView({ payload, session, tenants, onCreateTenant }: {
+  payload: DashboardPayload | null;
+  session: SessionPayload;
+  tenants: OrganizationTenant[];
+  onCreateTenant: (tenant: OrganizationTenant) => void;
+}) {
+  const [form, setForm] = useState({ name: '', businessUnit: '', region: 'us-east-1', purpose: 'assessment' });
+  const organizationName = session.tenant?.name || 'Synqora Organization';
+  const accountId = session.tenant?.tenantId || 'acct-local';
+
+  return (
+    <section className="view">
+      <div className="view-header">
+        <div>
+          <h1>Organizations & Accounts</h1>
+          <p>Customer isolation starts here. Each organization owns accounts, tenants, workspaces, users, policies, and migration inventory.</p>
+        </div>
+      </div>
+      <section className="org-hero panel">
+        <div>
+          <span className="eyebrow">Customer organization</span>
+          <h2>{organizationName}</h2>
+          <p>Use this like AWS Organizations: a customer organization can own multiple isolated Synqora accounts or tenants for business units, regions, portfolios, and environments.</p>
+        </div>
+        <div className="org-id-card">
+          <span>Organization Account ID</span>
+          <strong>{accountId}</strong>
+          <small>Support, audit, billing, troubleshooting, and policy boundary.</small>
+        </div>
+      </section>
+      <div className="org-metric-grid">
+        <div className="panel"><strong>{tenants.length}</strong><span>Accounts / Tenants</span></div>
+        <div className="panel"><strong>{payload?.projects.length || 0}</strong><span>Migration Projects</span></div>
+        <div className="panel"><strong>{payload?.connections?.length || 0}</strong><span>Database Connections</span></div>
+        <div className="panel"><strong>{payload?.jobs.length || 0}</strong><span>Workflow Jobs</span></div>
+      </div>
+      <div className="org-layout">
+        <form
+          className="panel"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (!form.name.trim()) return;
+            onCreateTenant({
+              id: `acct-${Date.now().toString(36)}`,
+              name: form.name,
+              businessUnit: form.businessUnit || 'Unassigned',
+              region: form.region || 'us-east-1',
+              purpose: form.purpose || 'assessment',
+              status: 'active'
+            });
+            setForm({ name: '', businessUnit: '', region: 'us-east-1', purpose: 'assessment' });
+          }}
+        >
+          <h2>Create Account / Tenant</h2>
+          <p className="muted">Model separate business units, regions, portfolios, or environments under the same customer organization.</p>
+          <Field label="Account / Tenant Name" value={form.name} onChange={(value) => setForm({ ...form, name: value })} />
+          <Field label="Business Unit" value={form.businessUnit} onChange={(value) => setForm({ ...form, businessUnit: value })} />
+          <Field label="Home Region" value={form.region} onChange={(value) => setForm({ ...form, region: value })} />
+          <Field label="Purpose" value={form.purpose} onChange={(value) => setForm({ ...form, purpose: value })} />
+          <button type="submit">Create Tenant</button>
+        </form>
+        <section className="panel">
+          <h2>Organization Account Hierarchy</h2>
+          <p className="muted">Customers see only accounts under their own organization. Operators troubleshoot by organization account ID, then account/tenant ID.</p>
+          <div className="org-account-grid">
+            {tenants.map((tenant) => (
+              <div className="org-account-card" key={tenant.id}>
+                <span>{tenant.id}</span>
+                <strong>{tenant.name}</strong>
+                <p>{tenant.businessUnit}</p>
+                <small>{tenant.region} / {tenant.purpose} / {humanizeStatus(tenant.status)}</small>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+    </section>
   );
 }
 
@@ -549,6 +672,7 @@ function ReadinessGate({ title, text, facts = [] }: { title: string; text: strin
 
 const viewLabels: Record<ViewKey, string> = {
   dashboard: 'Dashboard',
+  organizations: 'Organizations',
   services: 'Services',
   project: 'Project Pipeline',
   assessment: 'Assessment',

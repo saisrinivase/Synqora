@@ -6,6 +6,7 @@
 const appState = {
   session: null,
   dashboard: null,
+  organizationTenants: [],
   selectedProjectId: null,
   selectedProjectOverview: null,
   activeProjectFilter: 'all'
@@ -13,6 +14,7 @@ const appState = {
 
 const viewNames = {
   dashboard: 'Dashboard',
+  organizations: 'Organizations',
   services: 'Services',
   project: 'Project Pipeline',
   assessment: 'Assessment',
@@ -24,6 +26,7 @@ const viewNames = {
 };
 
 const THEME_STORAGE_KEY = 'synqora-theme';
+const ORG_TENANTS_STORAGE_KEY = 'synqora-org-tenants';
 
 initTheme();
 
@@ -37,6 +40,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initActiveProjectsCardHandler();
   initProjectCardHandlers();
   initServiceCardHandlers();
+  initOrganizationHandlers();
   initAuthHandlers();
   await initAuthSession();
 });
@@ -375,6 +379,7 @@ async function initDashboardApi() {
 
     const payload = await response.json();
     appState.dashboard = payload;
+    loadOrganizationTenants(payload.tenant || {});
 
     const summary = payload.summary || {};
 
@@ -395,6 +400,7 @@ async function initDashboardApi() {
     renderWorkspaceLabels(payload.tenant || {});
     renderDashboardEvidence(payload);
     renderServicesConsole(payload);
+    renderOrganizationConsole(payload);
 
     const projects = payload.projects || [];
     const selectedProjectStillVisible = projects.some((project) => project.projectId === appState.selectedProjectId);
@@ -528,6 +534,64 @@ function initServiceCardHandlers() {
     const view = card.dataset.serviceView;
     if (view) setActiveView(view);
   });
+}
+
+function initOrganizationHandlers() {
+  const form = document.getElementById('tenantCreateForm');
+  if (!form) return;
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const name = getInputValue('tenantNameInput');
+    const businessUnit = getInputValue('tenantBusinessUnitInput');
+    const region = getInputValue('tenantRegionInput') || 'us-east-1';
+    const environment = getInputValue('tenantEnvironmentInput') || 'assessment';
+    if (!name) {
+      window.alert('Tenant / account name is required');
+      return;
+    }
+
+    const tenant = {
+      id: `acct-${Date.now().toString(36)}`,
+      name,
+      businessUnit,
+      region,
+      environment,
+      status: 'active',
+      createdAt: new Date().toISOString()
+    };
+    appState.organizationTenants = [...appState.organizationTenants, tenant];
+    saveOrganizationTenants();
+    form.reset();
+    renderOrganizationConsole(appState.dashboard || {});
+  });
+}
+
+function loadOrganizationTenants(baseTenant = {}) {
+  const saved = localStorage.getItem(ORG_TENANTS_STORAGE_KEY);
+  if (saved) {
+    try {
+      appState.organizationTenants = JSON.parse(saved);
+      return;
+    } catch {
+      appState.organizationTenants = [];
+    }
+  }
+
+  appState.organizationTenants = [{
+    id: baseTenant.tenantId || 'acct-demo',
+    name: baseTenant.name || 'Primary Migration Account',
+    businessUnit: 'Shared Services',
+    region: baseTenant.regionHome || 'us-east-1',
+    environment: 'control-plane',
+    status: baseTenant.status || 'active',
+    createdAt: baseTenant.createdAt || new Date().toISOString()
+  }];
+  saveOrganizationTenants();
+}
+
+function saveOrganizationTenants() {
+  localStorage.setItem(ORG_TENANTS_STORAGE_KEY, JSON.stringify(appState.organizationTenants));
 }
 
 function renderDashboardProjects(projects) {
@@ -689,6 +753,40 @@ function renderServicesConsole(payload) {
       </tr>
     `;
   }).join('');
+}
+
+function renderOrganizationConsole(payload) {
+  const tenant = payload.tenant || {};
+  const projects = payload.projects || [];
+  const connections = payload.connections || [];
+  const jobs = payload.jobs || [];
+  const orgName = tenant.name || 'Synqora Organization';
+  const accountId = tenant.tenantId || 'acct-local';
+
+  setText('organizationNameValue', orgName);
+  setText('organizationAccountIdValue', accountId);
+  setText('organizationTenantCount', String(appState.organizationTenants.length));
+  setText('organizationProjectCount', String(projects.length));
+  setText('organizationDatabaseCount', String(connections.length));
+  setText('organizationJobCount', String(jobs.length));
+
+  const tenantGrid = document.getElementById('organizationTenantGrid');
+  if (!tenantGrid) return;
+
+  tenantGrid.innerHTML = appState.organizationTenants.map((item) => `
+    <div class="org-account-card">
+      <div>
+        <span>${escapeHtml(item.id)}</span>
+        <strong>${escapeHtml(item.name)}</strong>
+        <p>${escapeHtml(item.businessUnit || 'Unassigned business unit')}</p>
+      </div>
+      <div class="org-account-meta">
+        <small>${escapeHtml(item.region || 'Region pending')}</small>
+        <small>${escapeHtml(humanizeStatus(item.environment || 'workspace'))}</small>
+        <small class="status-badge ${escapeHtml(statusTone(item.status || 'active'))}">${escapeHtml(humanizeStatus(item.status || 'active'))}</small>
+      </div>
+    </div>
+  `).join('');
 }
 
 function setText(id, value) {
