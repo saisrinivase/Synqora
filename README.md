@@ -273,18 +273,19 @@ The current design direction assumes:
 Requirements:
 
 - Node.js 24+ recommended
+- PostgreSQL client tools (`psql`) if using internal PostgreSQL metadata storage
 
-Start `Synqora Cloud`:
+Start `Synqora Cloud` with disposable in-memory state:
 
 ```bash
 npm run start:cloud
 ```
 
-Start `Synqora Cloud` with PostgreSQL-backed storage:
+Recommended for product development: start `Synqora Cloud` with the internal PostgreSQL metadata database:
 
 ```bash
-SYNQORA_DB_NAME=postgres npm run db:setup
-SYNQORA_STORAGE=postgres SYNQORA_DB_NAME=postgres npm run start:cloud
+SYNQORA_DB_NAME=postgres npm run db:internal:setup
+SYNQORA_DB_NAME=postgres npm run start:cloud:internal
 ```
 
 Open:
@@ -310,6 +311,37 @@ Send a heartbeat:
 
 ```bash
 npm run agent:heartbeat
+```
+
+## Control-Plane Metadata Database
+
+Synqora should use a real backend database for product work. The current safe direction is:
+
+- Use the already available internal PostgreSQL database for local/control-plane metadata now.
+- Keep customer Oracle/PostgreSQL source and target data outside the SaaS database.
+- Store only Synqora metadata: organizations, tenants/accounts, projects, connection profiles, job state, evidence references, validation summaries, and audit records.
+- Later, move the same metadata schema to managed cloud PostgreSQL such as Aurora PostgreSQL, Cloud SQL, AlloyDB, Azure Database for PostgreSQL, or self-managed PostgreSQL by changing `SYNQORA_DATABASE_URL`.
+
+Storage modes:
+
+- `memory`: quick UI demo only; state is lost on restart.
+- `internal_postgres`: preferred local/internal metadata database.
+- `postgres`: alias for PostgreSQL-backed metadata storage.
+
+Example:
+
+```bash
+cp .env.example .env
+SYNQORA_DB_NAME=postgres npm run db:internal:setup
+SYNQORA_DB_NAME=postgres npm run start:cloud:internal
+```
+
+Cloud-ready swap later:
+
+```bash
+SYNQORA_STORAGE=internal_postgres \
+SYNQORA_DATABASE_URL=postgresql://user:password@managed-postgres.example.com:5432/synqora_control \
+npm run start:cloud:internal
 ```
 
 Poll for work:

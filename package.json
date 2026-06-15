@@ -10,6 +10,9 @@
     "test:api": "GOCACHE=$PWD/.cache/go-build go test ./apps/api-go",
     "test:engine": "PYTHONPATH=apps/engine-python python3 -m unittest discover -s apps/engine-python/tests",
     "test:web:types": "npm --prefix apps/web-react run build",
+    "start:cloud": "npm run legacy:start:cloud",
+    "start:cloud:memory": "SYNQORA_STORAGE=memory node apps/cloud/src/server.js",
+    "start:cloud:internal": "SYNQORA_STORAGE=internal_postgres node apps/cloud/src/server.js",
     "legacy:start:cloud": "node apps/cloud/src/server.js",
     "legacy:start:cloud:pg": "SYNQORA_STORAGE=postgres node apps/cloud/src/server.js",
     "legacy:start:agent": "node apps/agent/src/cli.js",
@@ -21,6 +24,7 @@
     "db:migrate": "node db/run-migrations.js",
     "db:seed": "node db/seed-demo.js",
     "db:setup": "npm run db:migrate && npm run db:seed",
+    "db:internal:setup": "SYNQORA_STORAGE=internal_postgres npm run db:setup",
     "legacy:test": "node --test",
     "test": "npm run test:api && npm run test:engine && npm run legacy:test"
   }
