@@ -48,3 +48,50 @@ func TestOracleConnectionQueuesAssessment(t *testing.T) {
 		t.Fatalf("unexpected capability: %s", jobs[0].CapabilityRequired)
 	}
 }
+
+func TestTenantDashboardsAreIsolated(t *testing.T) {
+	store := NewStore()
+	demoCtx, err := store.Authenticate(demoEmail, demoPassword)
+	if err != nil {
+		t.Fatalf("authenticate demo user: %v", err)
+	}
+	customerCtx, err := store.Signup(map[string]string{
+		"email":            "owner@customer-a.example",
+		"password":         "CustomerA_123",
+		"displayName":      "Customer A Owner",
+		"organizationName": "Customer A",
+	})
+	if err != nil {
+		t.Fatalf("signup customer: %v", err)
+	}
+
+	demoProject, err := store.CreateProject(demoCtx, map[string]interface{}{
+		"projectCode": "DEMO-ORA-001",
+		"name":        "Demo Oracle Assessment",
+	})
+	if err != nil {
+		t.Fatalf("create demo project: %v", err)
+	}
+	customerProject, err := store.CreateProject(customerCtx, map[string]interface{}{
+		"projectCode": "CUSTA-ORA-001",
+		"name":        "Customer A Oracle Assessment",
+	})
+	if err != nil {
+		t.Fatalf("create customer project: %v", err)
+	}
+
+	demoDashboard := store.Dashboard(demoCtx)
+	customerDashboard := store.Dashboard(customerCtx)
+
+	demoProjects := demoDashboard["projects"].([]Project)
+	customerProjects := customerDashboard["projects"].([]Project)
+	if len(demoProjects) != 1 || demoProjects[0].ProjectID != demoProject.ProjectID {
+		t.Fatalf("demo dashboard leaked or missed projects: %#v", demoProjects)
+	}
+	if len(customerProjects) != 1 || customerProjects[0].ProjectID != customerProject.ProjectID {
+		t.Fatalf("customer dashboard leaked or missed projects: %#v", customerProjects)
+	}
+	if _, err := store.ProjectOverview(customerCtx, demoProject.ProjectID); err == nil {
+		t.Fatalf("customer should not access demo tenant project overview")
+	}
+}

@@ -36,9 +36,11 @@ type Session struct {
 
 type Store struct {
 	mu          sync.Mutex
-	tenant      Tenant
+	tenants     []Tenant
 	users       []User
 	credentials map[string]string
+	userTenant  map[string]string
+	userRole    map[string]string
 	projects    []Project
 	connections []Connection
 	workflows   []Workflow
@@ -185,9 +187,11 @@ func NewStore() *Store {
 		UpdatedAt:   now,
 	}
 	return &Store{
-		tenant:      tenant,
+		tenants:     []Tenant{tenant},
 		users:       []User{user},
 		credentials: map[string]string{demoEmail: hashPassword(demoPassword)},
+		userTenant:  map[string]string{demoEmail: tenant.TenantID},
+		userRole:    map[string]string{demoEmail: "admin"},
 		projects:    []Project{},
 		connections: []Connection{},
 		workflows:   []Workflow{},
@@ -206,7 +210,11 @@ func (s *Store) Authenticate(email, password string) (AuthContext, error) {
 	}
 	for _, user := range s.users {
 		if strings.EqualFold(user.Email, normalized) {
-			return AuthContext{User: user, Tenant: s.tenant, Role: "admin"}, nil
+			tenant, ok := s.findTenantByID(s.userTenant[normalized])
+			if !ok {
+				return AuthContext{}, errors.New("tenant membership not found")
+			}
+			return AuthContext{User: user, Tenant: tenant, Role: firstNonEmpty(s.userRole[normalized], "member")}, nil
 		}
 	}
 	return AuthContext{}, errors.New("invalid email or password")
@@ -247,9 +255,11 @@ func (s *Store) Signup(input map[string]string) (AuthContext, error) {
 	}
 	user := User{UserID: newID("user"), Email: email, DisplayName: displayName, Status: "active", CreatedAt: now, UpdatedAt: now}
 
-	s.tenant = tenant
+	s.tenants = append(s.tenants, tenant)
 	s.users = append(s.users, user)
 	s.credentials[email] = hashPassword(password)
+	s.userTenant[email] = tenant.TenantID
+	s.userRole[email] = "owner"
 	return AuthContext{User: user, Tenant: tenant, Role: "owner"}, nil
 }
 
@@ -284,6 +294,12 @@ func (s *Store) Dashboard(ctx AuthContext) map[string]interface{} {
 		"projects": projects,
 		"jobs":     jobs,
 	}
+}
+
+func (s *Store) ListProjects(ctx AuthContext) []Project {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.tenantProjects(ctx.Tenant.TenantID)
 }
 
 func (s *Store) CreateProject(ctx AuthContext, input map[string]interface{}) (Project, error) {
@@ -510,6 +526,15 @@ func (s *Store) findProject(tenantID, projectID string) (Project, int, error) {
 	return Project{}, -1, errors.New("project not found")
 }
 
+func (s *Store) findTenantByID(tenantID string) (Tenant, bool) {
+	for _, tenant := range s.tenants {
+		if tenant.TenantID == tenantID {
+			return tenant, true
+		}
+	}
+	return Tenant{}, false
+}
+
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "service": "synqora-api-go", "version": "0.2.0", "time": nowISO()})
 }
@@ -578,7 +603,7 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request, ctx Aut
 func (s *Server) handleProjects(w http.ResponseWriter, r *http.Request, ctx AuthContext) {
 	switch r.Method {
 	case http.MethodGet:
-		writeJSON(w, http.StatusOK, map[string]interface{}{"projects": s.store.tenantProjects(ctx.Tenant.TenantID)})
+		writeJSON(w, http.StatusOK, map[string]interface{}{"projects": s.store.ListProjects(ctx)})
 	case http.MethodPost:
 		var input map[string]interface{}
 		if err := readJSON(r, &input); err != nil {

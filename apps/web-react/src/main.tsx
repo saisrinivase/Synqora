@@ -67,6 +67,7 @@ type SessionPayload = {
 };
 
 type ViewKey = 'dashboard' | 'project' | 'assessment' | 'converter' | 'dataload' | 'cdc' | 'validation' | 'cutover';
+type ReadinessViewKey = Exclude<ViewKey, 'dashboard' | 'project'>;
 
 const api = {
   async getSession(): Promise<SessionPayload> {
@@ -130,9 +131,11 @@ function App() {
   async function refreshDashboard() {
     const payload = await api.dashboard();
     setDashboard(payload);
-    if (!selectedProjectId && payload.projects.length > 0) {
-      setSelectedProjectId(payload.projects[0].projectId);
-    }
+    setSelectedProjectId((current) => {
+      if (payload.projects.length === 0) return null;
+      if (current && payload.projects.some((project) => project.projectId === current)) return current;
+      return payload.projects[0].projectId;
+    });
   }
 
   async function handleLogin(email: string, password: string) {
@@ -187,12 +190,16 @@ function App() {
             payload={dashboard}
             selectedProjectId={selectedProjectId}
             setSelectedProjectId={setSelectedProjectId}
+            onOpenProject={(projectId) => {
+              setSelectedProjectId(projectId);
+              setActiveView('project');
+            }}
             onCreateProject={handleCreateProject}
             onCreateConnection={handleCreateConnection}
           />
         )}
         {activeView === 'project' && <ProjectView project={selectedProject} jobs={projectJobs} onCreateConnection={handleCreateConnection} />}
-        {activeView !== 'dashboard' && activeView !== 'project' && <ReadinessView view={activeView} project={selectedProject} jobs={projectJobs} />}
+        {activeView !== 'dashboard' && activeView !== 'project' && <ReadinessView view={activeView as ReadinessViewKey} project={selectedProject} jobs={projectJobs} />}
       </main>
     </div>
   );
@@ -268,13 +275,18 @@ function Topbar({ view }: { view: ViewKey }) {
   );
 }
 
-function DashboardView({ payload, selectedProjectId, setSelectedProjectId, onCreateProject, onCreateConnection }: {
+function DashboardView({ payload, selectedProjectId, setSelectedProjectId, onOpenProject, onCreateProject, onCreateConnection }: {
   payload: DashboardPayload | null;
   selectedProjectId: string | null;
   setSelectedProjectId: (id: string) => void;
+  onOpenProject: (id: string) => void;
   onCreateProject: (input: Record<string, string>) => Promise<void>;
   onCreateConnection: (input: Record<string, string>) => Promise<void>;
 }) {
+  const scrollToProjects = () => {
+    document.getElementById('tenant-projects')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   return (
     <section className="view">
       <div className="view-header">
@@ -284,7 +296,7 @@ function DashboardView({ payload, selectedProjectId, setSelectedProjectId, onCre
         </div>
       </div>
       <div className="metric-row">
-        <Metric label="Active Projects" value={payload?.summary.activeProjects || 0} hint={payload?.projects.length ? 'Live workspace data' : 'No projects yet'} />
+        <Metric label="Active Projects" value={payload?.summary.activeProjects || 0} hint={payload?.projects.length ? 'Open tenant project list' : 'No projects yet'} onClick={scrollToProjects} />
         <Metric label="Objects Discovered" value={payload?.summary.discoveredObjects || 0} hint="Awaiting Oracle discovery" />
         <Metric label="Conversion Rate %" value={payload?.summary.averageConversionRatePct || 0} hint="No conversion run" />
         <Metric label="Data Migrated TB" value={(payload?.summary.dataMigratedTb || 0).toFixed(1)} hint="No load started" />
@@ -293,12 +305,13 @@ function DashboardView({ payload, selectedProjectId, setSelectedProjectId, onCre
         <ProjectCreatePanel onCreateProject={onCreateProject} />
         <ConnectionCreatePanel disabled={!selectedProjectId} onCreateConnection={onCreateConnection} />
       </div>
-      <section className="panel">
-        <h2>Active Migrations</h2>
+      <section id="tenant-projects" className="panel">
+        <h2>Tenant Projects</h2>
+        <p className="muted">Only projects owned by the current customer tenant are returned here. Other customer dashboards are isolated by the API tenant boundary.</p>
         {!payload?.projects.length && <EmptyState text="No migration projects yet. Create a project, then attach an Oracle source connection to start assessment." />}
         <div className="project-grid">
           {payload?.projects.map((project) => (
-            <button key={project.projectId} className={`project-card ${selectedProjectId === project.projectId ? 'selected' : ''}`} onClick={() => setSelectedProjectId(project.projectId)}>
+            <button key={project.projectId} className={`project-card ${selectedProjectId === project.projectId ? 'selected' : ''}`} onClick={() => onOpenProject(project.projectId)} onFocus={() => setSelectedProjectId(project.projectId)}>
               <span>{project.projectCode}</span>
               <strong>{project.name}</strong>
               <p>{project.description}</p>
@@ -341,7 +354,7 @@ function ProjectView({ project, jobs, onCreateConnection }: { project: Project |
   );
 }
 
-function ReadinessView({ view, project, jobs }: { view: ViewKey; project: Project | null; jobs: Job[] }) {
+function ReadinessView({ view, project, jobs }: { view: ReadinessViewKey; project: Project | null; jobs: Job[] }) {
   const state = readinessCopy[view];
   return (
     <section className="view">
@@ -401,7 +414,10 @@ function Field({ label, value, onChange }: { label: string; value: string; onCha
   return <label>{label}<input value={value} onChange={(event) => onChange(event.target.value)} /></label>;
 }
 
-function Metric({ label, value, hint }: { label: string; value: string | number; hint: string }) {
+function Metric({ label, value, hint, onClick }: { label: string; value: string | number; hint: string; onClick?: () => void }) {
+  if (onClick) {
+    return <button type="button" className="metric-card metric-action" onClick={onClick}><strong>{value}</strong><span>{label}</span><small>{hint}</small></button>;
+  }
   return <div className="metric-card"><strong>{value}</strong><span>{label}</span><small>{hint}</small></div>;
 }
 

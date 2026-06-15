@@ -224,6 +224,7 @@ label {
 .metric-card {
   border-radius: 22px;
   padding: 22px;
+  text-align: left;
 }
 
 .metric-card strong {
@@ -239,6 +240,18 @@ label {
 
 .metric-card small {
   color: var(--muted);
+}
+
+.metric-action {
+  width: 100%;
+  border: 1px solid rgba(69, 211, 255, 0.35);
+  color: inherit;
+  background: var(--panel);
+}
+
+.metric-action:hover {
+  border-color: rgba(69, 211, 255, 0.7);
+  transform: translateY(-1px);
 }
 
 .workspace-grid {
