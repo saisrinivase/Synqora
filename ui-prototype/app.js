@@ -84,6 +84,7 @@ async function initAuthSession() {
       return;
     }
   } catch (error) {
+    showStartupNetworkError(error);
     console.warn('Synqora session bootstrap failed:', error);
   }
 
@@ -125,10 +126,14 @@ function initAuthHandlers() {
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', async () => {
-      await fetch('/api/v1/auth/logout', {
-        method: 'POST',
-        credentials: 'same-origin'
-      });
+      try {
+        await fetch('/api/v1/auth/logout', {
+          method: 'POST',
+          credentials: 'same-origin'
+        });
+      } catch (error) {
+        console.warn(formatNetworkError(error));
+      }
       appState.session = null;
       appState.dashboard = null;
       appState.selectedProjectId = null;
@@ -215,9 +220,8 @@ async function submitLogin() {
   if (submitBtn) submitBtn.disabled = true;
 
   try {
-    const response = await fetch('/api/v1/auth/login', {
+    const response = await safeFetch('/api/v1/auth/login', {
       method: 'POST',
-      credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email: emailEl?.value,
@@ -251,9 +255,8 @@ async function submitSignup() {
   if (submitBtn) submitBtn.disabled = true;
 
   try {
-    const response = await fetch('/api/v1/auth/signup', {
+    const response = await safeFetch('/api/v1/auth/signup', {
       method: 'POST',
-      credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email: emailEl?.value,
@@ -326,16 +329,43 @@ function applyDemoLoginHint(demoLogin) {
 }
 
 async function apiFetch(path, options = {}) {
-  const response = await fetch(path, {
-    ...options,
-    credentials: 'same-origin'
-  });
+  const response = await safeFetch(path, options);
 
   if (response.status === 401) {
     setLoggedOutView();
   }
 
   return response;
+}
+
+async function safeFetch(path, options = {}) {
+  let response;
+  try {
+    response = await fetch(path, {
+      ...options,
+      credentials: 'same-origin'
+    });
+  } catch (error) {
+    throw new Error(formatNetworkError(error));
+  }
+
+  return response;
+}
+
+function formatNetworkError(error) {
+  const rawMessage = error instanceof Error ? error.message : String(error || '');
+  if (rawMessage.includes('NetworkError') || rawMessage.includes('Failed to fetch') || rawMessage.includes('Load failed')) {
+    return 'Synqora API is not reachable. Start the local server with npm run legacy:start:cloud and reload http://127.0.0.1:8787/.';
+  }
+  return rawMessage || 'Synqora API request failed.';
+}
+
+function showStartupNetworkError(error) {
+  const message = formatNetworkError(error);
+  const loginError = document.getElementById('loginError');
+  const providerMessage = document.getElementById('providerMessage');
+  if (loginError) loginError.textContent = message;
+  if (providerMessage) providerMessage.textContent = message;
 }
 
 async function initDashboardApi() {

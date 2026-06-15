@@ -114,19 +114,32 @@ const api = {
 };
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(path, {
-    ...options,
-    credentials: 'same-origin',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers || {})
-    }
-  });
+  let response: Response;
+  try {
+    response = await fetch(path, {
+      ...options,
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers || {})
+      }
+    });
+  } catch (error) {
+    throw new Error(formatNetworkError(error));
+  }
   const payload = await response.json();
   if (!response.ok) {
     throw new Error(payload.error || 'Synqora API request failed');
   }
   return payload;
+}
+
+function formatNetworkError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error || '');
+  if (message.includes('NetworkError') || message.includes('Failed to fetch') || message.includes('Load failed')) {
+    return 'Synqora API is not reachable. Start the local server with npm run legacy:start:cloud and reload http://127.0.0.1:8787/.';
+  }
+  return message || 'Synqora API request failed.';
 }
 
 function App() {
