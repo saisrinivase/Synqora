@@ -905,6 +905,8 @@ body.authenticated .main-content { display: flex; }
   transition: all var(--transition);
 }
 .stat-card:hover { border-color: var(--border-accent); transform: translateY(-2px); box-shadow: var(--shadow-card); }
+.stat-card-action { cursor: pointer; }
+.stat-card-action:focus-visible { outline: 2px solid var(--accent-cyan); outline-offset: 3px; }
 .stat-icon {
   width: 40px; height: 40px; border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--accent) 12%, transparent);

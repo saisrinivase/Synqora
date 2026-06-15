@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initSparkline();
   initModalHandlers();
   initFilterHandlers();
+  initActiveProjectsCardHandler();
   initProjectCardHandlers();
   initAuthHandlers();
   await initAuthSession();
@@ -329,7 +330,9 @@ async function initDashboardApi() {
     renderWorkspaceLabels(payload.tenant || {});
     renderDashboardEvidence(payload);
 
-    const defaultProjectId = appState.selectedProjectId || payload.projects?.[0]?.projectId;
+    const projects = payload.projects || [];
+    const selectedProjectStillVisible = projects.some((project) => project.projectId === appState.selectedProjectId);
+    const defaultProjectId = selectedProjectStillVisible ? appState.selectedProjectId : projects[0]?.projectId;
     if (defaultProjectId) {
       await loadProjectOverview(defaultProjectId);
     } else {
@@ -414,6 +417,24 @@ function setActiveView(viewId) {
   if (breadcrumbPage) {
     breadcrumbPage.textContent = viewNames[viewId] || viewId;
   }
+}
+
+function initActiveProjectsCardHandler() {
+  const card = document.getElementById('activeProjectsCard');
+  const projectSection = document.getElementById('tenantProjectsSection');
+  if (!card || !projectSection) return;
+
+  const openTenantProjects = () => {
+    setActiveView('dashboard');
+    projectSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  card.addEventListener('click', openTenantProjects);
+  card.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    openTenantProjects();
+  });
 }
 
 function initProjectCardHandlers() {

@@ -374,7 +374,7 @@
 
       <!-- Stats Row -->
       <div class="stats-grid">
-        <div class="stat-card">
+        <div class="stat-card stat-card-action" id="activeProjectsCard" role="button" tabindex="0" title="Open current tenant projects">
           <div class="stat-icon" style="--accent: #7c3aed">
             <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/></svg>
           </div>
@@ -511,8 +511,9 @@
       </div>
 
       <!-- Project Cards -->
-      <div class="section-header">
-        <h2>Active Migrations</h2>
+      <div class="section-header" id="tenantProjectsSection">
+        <h2>Tenant Projects</h2>
+        <p class="table-note">This list is scoped to the signed-in customer tenant. Other customer dashboards and projects are isolated by the control-plane tenant boundary.</p>
         <div class="filter-group">
           <button class="filter-btn active" data-project-filter="all">All</button>
           <button class="filter-btn" data-project-filter="in_progress">In Progress</button>
