@@ -328,6 +328,101 @@ label {
   margin: 22px 0;
 }
 
+.planning-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.planning-metrics strong {
+  display: block;
+  font-size: 1.6rem;
+}
+
+.planning-metrics span {
+  color: var(--muted);
+}
+
+.schedule-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.schedule-grid div {
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel-strong);
+}
+
+.schedule-grid span,
+.ticket-card span {
+  color: var(--accent);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.schedule-grid strong,
+.ticket-card strong {
+  display: block;
+  margin: 7px 0;
+}
+
+.schedule-grid p,
+.ticket-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.jira-board {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(220px, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.jira-column {
+  min-width: 220px;
+  align-content: start;
+}
+
+.ticket-card {
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--accent);
+  border-radius: 14px;
+  background: var(--panel-strong);
+}
+
+.ticket-card.priority-high {
+  border-left-color: #dc2626;
+}
+
+.ticket-card.priority-medium {
+  border-left-color: var(--warning);
+}
+
+.ticket-card.priority-low {
+  border-left-color: var(--good);
+}
+
+.ticket-card small {
+  width: fit-content;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(15, 118, 110, 0.08);
+  color: var(--accent);
+  font-size: 0.66rem;
+  font-weight: 900;
+}
+
 .org-hero {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.65fr);
@@ -701,6 +796,8 @@ label {
 
   .metric-row,
   .workspace-grid,
+  .planning-metrics,
+  .schedule-grid,
   .project-grid,
   .org-hero,
   .org-metric-grid,

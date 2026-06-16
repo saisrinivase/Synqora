@@ -89,8 +89,8 @@ type OrganizationTenant = {
   status: string;
 };
 
-type ViewKey = 'dashboard' | 'organizations' | 'services' | 'project' | 'assessment' | 'converter' | 'dataload' | 'cdc' | 'validation' | 'cutover';
-type ReadinessViewKey = Exclude<ViewKey, 'dashboard' | 'organizations' | 'services' | 'project'>;
+type ViewKey = 'dashboard' | 'planning' | 'organizations' | 'services' | 'project' | 'assessment' | 'converter' | 'dataload' | 'cdc' | 'validation' | 'cutover';
+type ReadinessViewKey = Exclude<ViewKey, 'dashboard' | 'planning' | 'organizations' | 'services' | 'project'>;
 type ThemeMode = 'light' | 'dark';
 
 const themeStorageKey = 'synqora-theme';
@@ -256,6 +256,7 @@ function App() {
       <main className="workspace">
         <Topbar view={activeView} theme={theme} onToggleTheme={() => setTheme((current) => (current === 'dark' ? 'light' : 'dark'))} />
         {error && <div className="alert">{error}</div>}
+        {activeView === 'planning' && <PlanningView />}
         {activeView === 'organizations' && (
           <OrganizationsView
             payload={dashboard}
@@ -279,7 +280,7 @@ function App() {
         )}
         {activeView === 'services' && <ServicesView payload={dashboard} setActiveView={setActiveView} onCreateConnection={handleCreateConnection} />}
         {activeView === 'project' && <ProjectView project={selectedProject} jobs={projectJobs} onCreateConnection={handleCreateConnection} />}
-        {activeView !== 'dashboard' && activeView !== 'organizations' && activeView !== 'services' && activeView !== 'project' && <ReadinessView view={activeView as ReadinessViewKey} project={selectedProject} jobs={projectJobs} />}
+        {activeView !== 'dashboard' && activeView !== 'planning' && activeView !== 'organizations' && activeView !== 'services' && activeView !== 'project' && <ReadinessView view={activeView as ReadinessViewKey} project={selectedProject} jobs={projectJobs} />}
       </main>
     </div>
   );
@@ -320,7 +321,7 @@ function Shell({ message }: { message: string }) {
 
 function Sidebar({ tenant, user, activeView, setActiveView }: { tenant?: Tenant; user?: User; activeView: ViewKey; setActiveView: (view: ViewKey) => void }) {
   const groups: Array<{ label: string; items: Array<[ViewKey, string]> }> = [
-    { label: 'Overview', items: [['dashboard', 'Dashboard'], ['organizations', 'Organizations'], ['services', 'Services'], ['project', 'Project Pipeline']] },
+    { label: 'Overview', items: [['dashboard', 'Dashboard'], ['planning', 'Planning Board'], ['organizations', 'Organizations'], ['services', 'Services'], ['project', 'Project Pipeline']] },
     { label: 'Migration', items: [['assessment', 'Assessment'], ['converter', 'Schema Converter'], ['dataload', 'Data Load'], ['cdc', 'CDC / Replication']] },
     { label: 'Operations', items: [['validation', 'Validation'], ['cutover', 'Cutover Control']] }
   ];
@@ -342,6 +343,91 @@ function Sidebar({ tenant, user, activeView, setActiveView }: { tenant?: Tenant;
       <div className="tenant-chip">{tenant?.name || 'Tenant'}</div>
       <div className="user-chip">{user?.displayName || user?.email || 'User'}</div>
     </aside>
+  );
+}
+
+function PlanningView() {
+  const lanes = [
+    {
+      name: 'Backlog',
+      tickets: [
+        ['SYN-101', 'Oracle assessment source-only workflow', 'Connection, privilege checks, metadata inventory, evidence capture.', 'Development', 'high'],
+        ['SYN-102', 'Transport provider selector', 'AWS DMS, Qlik/HVR, GoldenGate, Debezium, ora2pg, pgloader, custom.', 'Architecture', 'medium'],
+        ['SYN-103', 'Consistency mode planner', 'Global, schema-wave, and table-level snapshot recommendation engine.', 'Assessment', 'medium']
+      ]
+    },
+    {
+      name: 'In Development',
+      tickets: [
+        ['SYN-201', 'Internal metadata DB persistence', 'Organizations, projects, connections, workflow jobs, audit evidence.', 'Backend', 'high'],
+        ['SYN-202', 'Project-first UX', 'Organization/account -> project -> source connection -> assessment.', 'Frontend', 'high']
+      ]
+    },
+    {
+      name: 'Testing',
+      tickets: [
+        ['SYN-301', 'Tenant isolation regression', 'One customer must never see another customer dashboard or project.', 'Security Testing', 'high'],
+        ['SYN-302', 'Data consistency test plan', 'Snapshot checkpoint, chunk load, CDC start, validation gates.', 'Migration Testing', 'medium']
+      ]
+    },
+    {
+      name: 'Bugs',
+      tickets: [
+        ['BUG-401', 'NetworkError API handling', 'Show actionable startup command and health endpoint state.', 'Open', 'high'],
+        ['BUG-402', 'Dashboard empty-state accuracy', 'Do not show active projects when internal DB has zero projects.', 'Watch', 'medium']
+      ]
+    },
+    {
+      name: 'Ready For Go-Live',
+      tickets: [
+        ['SYN-501', 'Cloud deployment plan', 'Managed PostgreSQL, secrets, SSO, agent registration, observability.', 'Release', 'low'],
+        ['SYN-502', 'Support runbook', 'Org/account troubleshooting, audit trail, rollback, incident handoff.', 'Operations', 'low']
+      ]
+    }
+  ];
+
+  return (
+    <section className="view">
+      <div className="view-header">
+        <div>
+          <h1>Internal Planning Board</h1>
+          <p>Jira-style execution board for daily 4-hour focus blocks, testing, bugs, and cloud go-live readiness.</p>
+        </div>
+      </div>
+      <div className="planning-metrics">
+        <div className="panel"><strong>20h</strong><span>Weekly Focus Capacity</span></div>
+        <div className="panel"><strong>4h/day</strong><span>Minimum Internal Build Time</span></div>
+        <div className="panel"><strong>6</strong><span>Active Workstreams</span></div>
+        <div className="panel"><strong>Cloud</strong><span>Target Go-Live Track</span></div>
+      </div>
+      <section className="panel">
+        <span className="eyebrow">Daily operating rhythm</span>
+        <h2>Minimum 4 hours per day, protected for product execution.</h2>
+        <div className="schedule-grid">
+          {[
+            ['Hour 1', 'Architecture + ticket grooming', 'Break discussions into actionable stories and acceptance criteria.'],
+            ['Hour 2', 'Development', 'Implement highest-priority product capability or connector path.'],
+            ['Hour 3', 'Testing + evidence', 'Unit, API, UI, data consistency, and regression checks.'],
+            ['Hour 4', 'Review + go-live prep', 'Push commits, update docs, triage bugs, and confirm next-day plan.']
+          ].map(([slot, title, text]) => <div key={slot}><span>{slot}</span><strong>{title}</strong><p>{text}</p></div>)}
+        </div>
+      </section>
+      <div className="jira-board">
+        {lanes.map((lane) => (
+          <section className="jira-column panel" key={lane.name}>
+            <h2>{lane.name}</h2>
+            {lane.tickets.map(([id, title, text, tag, priority]) => (
+              <div className={`ticket-card priority-${priority}`} key={id}>
+                <span>{id}</span>
+                <strong>{title}</strong>
+                <p>{text}</p>
+                <small>{tag}</small>
+              </div>
+            ))}
+          </section>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -708,6 +794,7 @@ function ReadinessGate({ title, text, facts = [] }: { title: string; text: strin
 
 const viewLabels: Record<ViewKey, string> = {
   dashboard: 'Dashboard',
+  planning: 'Planning Board',
   organizations: 'Organizations',
   services: 'Services',
   project: 'Project Pipeline',

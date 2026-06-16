@@ -282,6 +282,10 @@
         <svg viewBox="0 0 20 20" fill="currentColor"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 6a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zm10 0a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg>
         <span>Dashboard</span>
       </a>
+      <a href="#" class="nav-item" data-view="planning">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zM18 9H2v7a2 2 0 002 2h12a2 2 0 002-2V9zm-9 2a1 1 0 011-1h4a1 1 0 110 2h-4a1 1 0 01-1-1zm-4 0a1 1 0 100 2h1a1 1 0 100-2H5zm0 4a1 1 0 100 2h1a1 1 0 100-2H5zm4 1a1 1 0 011-1h4a1 1 0 110 2h-4a1 1 0 01-1-1z"/></svg>
+        <span>Planning Board</span>
+      </a>
       <a href="#" class="nav-item" data-view="organizations">
         <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a4 4 0 00-4 4v1H5a2 2 0 00-2 2v7a2 2 0 002 2h10a2 2 0 002-2V9a2 2 0 00-2-2h-1V6a4 4 0 00-4-4zm-2 5V6a2 2 0 114 0v1H8z"/></svg>
         <span>Organizations</span>
@@ -593,6 +597,94 @@
           <div id="riskHeatmapContent">
             <div class="empty-state small">Risk scoring will appear after Oracle discovery and assessment evidence is collected.</div>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== PLANNING BOARD VIEW ===================== -->
+    <section class="view" id="view-planning">
+      <div class="view-header">
+        <div>
+          <h1>Internal Planning Board</h1>
+          <p class="view-subtitle">Jira-style execution board for the Synqora product build, daily 4-hour focus blocks, testing, bugs, and cloud go-live readiness.</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-ghost">Export Plan</button>
+          <button class="btn btn-primary">Add Ticket</button>
+        </div>
+      </div>
+
+      <div class="planning-metrics">
+        <div class="planning-metric glass-card"><span>20h</span><small>Weekly Focus Capacity</small></div>
+        <div class="planning-metric glass-card"><span>4h/day</span><small>Minimum Internal Build Time</small></div>
+        <div class="planning-metric glass-card"><span>6</span><small>Active Workstreams</small></div>
+        <div class="planning-metric glass-card"><span>Cloud</span><small>Target Go-Live Track</small></div>
+      </div>
+
+      <div class="daily-schedule glass-card">
+        <div class="section-header compact">
+          <div>
+            <span class="surface-kicker">Daily operating rhythm</span>
+            <h2>Minimum 4 hours per day, protected for product execution.</h2>
+            <p class="table-note">Each day should produce shippable evidence: code, tests, docs, reviewed architecture, or validated UI. Bugs and test failures move into the board immediately.</p>
+          </div>
+        </div>
+        <div class="schedule-grid">
+          <div><span>Hour 1</span><strong>Architecture + ticket grooming</strong><p>Break discussions into actionable stories and acceptance criteria.</p></div>
+          <div><span>Hour 2</span><strong>Development</strong><p>Implement highest-priority product capability or connector path.</p></div>
+          <div><span>Hour 3</span><strong>Testing + evidence</strong><p>Unit, API, UI, data consistency, and regression checks.</p></div>
+          <div><span>Hour 4</span><strong>Review + go-live prep</strong><p>Push commits, update docs, triage bugs, and confirm next-day plan.</p></div>
+        </div>
+      </div>
+
+      <div class="jira-board">
+        <div class="jira-column glass-card">
+          <h3>Backlog</h3>
+          <div class="ticket-card priority-high"><span>SYN-101</span><strong>Oracle assessment source-only workflow</strong><p>Connection, privilege checks, metadata inventory, evidence capture.</p><small>Development</small></div>
+          <div class="ticket-card priority-med"><span>SYN-102</span><strong>Transport provider selector</strong><p>AWS DMS, Qlik/HVR, GoldenGate, Debezium, ora2pg, pgloader, custom.</p><small>Architecture</small></div>
+          <div class="ticket-card priority-med"><span>SYN-103</span><strong>Consistency mode planner</strong><p>Global, schema-wave, and table-level snapshot recommendation engine.</p><small>Assessment</small></div>
+        </div>
+        <div class="jira-column glass-card">
+          <h3>In Development</h3>
+          <div class="ticket-card priority-high"><span>SYN-201</span><strong>Internal metadata DB persistence</strong><p>Organizations, projects, connections, workflow jobs, audit evidence.</p><small>Backend</small></div>
+          <div class="ticket-card priority-high"><span>SYN-202</span><strong>Project-first UX</strong><p>Organization/account → project → source connection → assessment.</p><small>Frontend</small></div>
+        </div>
+        <div class="jira-column glass-card">
+          <h3>Testing</h3>
+          <div class="ticket-card priority-high"><span>SYN-301</span><strong>Tenant isolation regression</strong><p>One customer must never see another customer dashboard or project.</p><small>Security Testing</small></div>
+          <div class="ticket-card priority-med"><span>SYN-302</span><strong>Data consistency test plan</strong><p>Snapshot checkpoint, chunk load, CDC start, validation gates.</p><small>Migration Testing</small></div>
+        </div>
+        <div class="jira-column glass-card">
+          <h3>Bugs</h3>
+          <div class="ticket-card priority-high bug"><span>BUG-401</span><strong>NetworkError API handling</strong><p>Show actionable startup command and health endpoint state.</p><small>Open</small></div>
+          <div class="ticket-card priority-med bug"><span>BUG-402</span><strong>Dashboard empty-state accuracy</strong><p>Do not show active projects when internal DB has zero projects.</p><small>Watch</small></div>
+        </div>
+        <div class="jira-column glass-card">
+          <h3>Ready For Go-Live</h3>
+          <div class="ticket-card priority-low"><span>SYN-501</span><strong>Cloud deployment plan</strong><p>Managed PostgreSQL, secrets, SSO, agent registration, observability.</p><small>Release</small></div>
+          <div class="ticket-card priority-low"><span>SYN-502</span><strong>Support runbook</strong><p>Org/account troubleshooting, audit trail, rollback, incident handoff.</p><small>Operations</small></div>
+        </div>
+      </div>
+
+      <div class="planning-lower-grid">
+        <div class="glass-card testing-matrix">
+          <h3>Testing Matrix</h3>
+          <div class="matrix-row"><span>Unit</span><strong>Go API, Python rules, Node legacy store</strong><small>Every commit</small></div>
+          <div class="matrix-row"><span>API</span><strong>Auth, tenant isolation, projects, connections, agent jobs</strong><small>Daily</small></div>
+          <div class="matrix-row"><span>UI</span><strong>Login, dashboard, services, project, planning board</strong><small>Daily</small></div>
+          <div class="matrix-row"><span>Migration</span><strong>SCN/checkpoint, chunk plan, CDC start, validation</strong><small>Per feature</small></div>
+          <div class="matrix-row"><span>Security</span><strong>Secrets, RBAC, SSO, audit, customer isolation</strong><small>Release gate</small></div>
+        </div>
+        <div class="glass-card golive-checklist">
+          <h3>Cloud Go-Live Track</h3>
+          <ul class="connection-checklist compact">
+            <li>Managed PostgreSQL metadata store selected and migration path tested</li>
+            <li>Customer-side agent registration and token rotation validated</li>
+            <li>SSO/GitHub/Gmail/email login strategy finalized</li>
+            <li>Audit, logging, metrics, and alerting wired for SaaS operations</li>
+            <li>Transport-provider adapters modeled with provider-specific evidence</li>
+            <li>Rollback and incident response runbooks approved</li>
+          </ul>
         </div>
       </div>
     </section>

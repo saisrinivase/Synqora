@@ -14,6 +14,7 @@ const appState = {
 
 const viewNames = {
   dashboard: 'Dashboard',
+  planning: 'Planning Board',
   organizations: 'Organizations',
   services: 'Services',
   project: 'Project Pipeline',

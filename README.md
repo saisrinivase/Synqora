@@ -167,6 +167,28 @@ Consistency modes:
 4. `Continuous Replication`
 - support long-running synchronization for DR, reporting, or modernization programs
 
+## Internal Execution Board
+
+Synqora should be managed internally with a lightweight Jira-style planning board.
+
+Daily operating target:
+
+- minimum `4 hours/day` protected product execution time
+- hour 1: architecture, ticket grooming, acceptance criteria
+- hour 2: development
+- hour 3: testing and evidence capture
+- hour 4: review, documentation, bug triage, and next-day planning
+
+Ticket lanes:
+
+- `Backlog`: ideas, architecture decisions, migration pitfalls, connector candidates
+- `In Development`: active implementation work
+- `Testing`: unit, API, UI, migration consistency, security, and regression validation
+- `Bugs`: reported defects, environment issues, broken flows, incorrect product behavior
+- `Ready For Go-Live`: cloud deployment, runbooks, SSO, observability, support readiness
+
+Every major discussion should become one or more trackable tickets with acceptance criteria, test evidence, and product artifact updates.
+
 ## Platform Model
 
 The architecture is organized into four planes:
