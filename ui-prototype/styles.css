@@ -1337,6 +1337,70 @@ body.authenticated .main-content { display: flex; }
   letter-spacing: 0.11em;
   text-transform: uppercase;
 }
+.protocol-surface {
+  margin: 18px 0;
+}
+.protocol-surface h2 {
+  margin-top: 6px;
+}
+.protocol-grid,
+.transport-grid {
+  display: grid;
+  gap: 12px;
+}
+.protocol-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.transport-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 12px;
+}
+.protocol-card,
+.transport-card {
+  min-height: 132px;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: rgba(255,255,255,0.025);
+}
+.protocol-card span,
+.transport-card span {
+  display: inline-block;
+  margin-bottom: 8px;
+  color: var(--accent-cyan);
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+.protocol-card strong,
+.transport-card strong {
+  display: block;
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+.protocol-card p,
+.transport-card p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  line-height: 1.55;
+}
+.protocol-gates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+.protocol-gates span {
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(6,182,212,0.24);
+  color: var(--accent-cyan);
+  background: rgba(6,182,212,0.08);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
 
 /* Section Header */
 .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
@@ -1888,6 +1952,7 @@ body.authenticated .main-content { display: flex; }
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
   .org-metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .services-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .transport-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .connection-onboarding-grid { grid-template-columns: 1fr; }
   .project-grid { grid-template-columns: repeat(2, 1fr); }
   .assessment-top { grid-template-columns: 1fr 1fr; }
@@ -1937,6 +2002,10 @@ body.authenticated .main-content { display: flex; }
   }
   .enterprise-surface-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+  .protocol-grid,
+  .transport-grid {
+    grid-template-columns: 1fr;
   }
   .services-hero {
     grid-template-columns: 1fr;

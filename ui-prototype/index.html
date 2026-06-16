@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Synqora — Migration Operating System</title>
   <meta name="description" content="Synqora: End-to-end Oracle to PostgreSQL migration automation platform">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230f766e'/%3E%3Cpath d='M8 16 14 10 20 16 14 22Z' fill='white'/%3E%3Cpath d='M14 16 20 10 26 16 20 22Z' fill='%23bfdbfe'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -489,6 +490,48 @@
         </div>
       </div>
 
+      <div class="protocol-surface glass-card">
+        <div class="section-header compact">
+          <div>
+            <span class="surface-kicker">Synqora protocol</span>
+            <h2>Choose the transport. Synqora controls consistency.</h2>
+            <p class="table-note">Customers can use commercial, cloud-native, open-source, or custom data movement tools. Synqora enforces snapshot boundaries, chunk plans, CDC start checkpoints, validation evidence, and cutover gates.</p>
+          </div>
+        </div>
+        <div class="protocol-grid">
+          <div class="protocol-card">
+            <span>Best correctness</span>
+            <strong>Global Snapshot Mode</strong>
+            <p>One SCN/checkpoint for all schemas and tables. Simplest CDC model, but requires enough undo/log retention.</p>
+          </div>
+          <div class="protocol-card">
+            <span>Enterprise phased</span>
+            <strong>Schema Wave Snapshot Mode</strong>
+            <p>One checkpoint per dependency-aware schema or application wave for multi-schema enterprise programs.</p>
+          </div>
+          <div class="protocol-card">
+            <span>Huge hot tables</span>
+            <strong>Table-Level Snapshot Mode</strong>
+            <p>Per-table or table-group checkpoints for 5 TB+ or high-change objects with stronger validation gates.</p>
+          </div>
+        </div>
+        <div class="transport-grid">
+          <div class="transport-card"><span>Cloud native</span><strong>AWS DMS</strong><p>Managed full-load plus CDC for AWS-centered migrations.</p></div>
+          <div class="transport-card"><span>Commercial</span><strong>Qlik / HVR / GoldenGate</strong><p>High-throughput enterprise CDC and low-downtime replication.</p></div>
+          <div class="transport-card"><span>Open source</span><strong>Debezium / ora2pg / pgloader</strong><p>Streaming, conversion, and controlled batch movement options.</p></div>
+          <div class="transport-card"><span>Customer managed</span><strong>Unload / Files / COPY</strong><p>Data Pump, object storage, external tables, and custom bulk paths.</p></div>
+        </div>
+        <div class="protocol-gates">
+          <span>Snapshot captured</span>
+          <span>Chunk plan approved</span>
+          <span>CDC start recorded</span>
+          <span>Load checkpointed</span>
+          <span>CDC caught up</span>
+          <span>Validation passed</span>
+          <span>Cutover approved</span>
+        </div>
+      </div>
+
       <div class="enterprise-surface glass-card">
         <div class="section-header compact">
           <div>
@@ -628,6 +671,21 @@
       </div>
 
       <div class="services-grid" id="servicesGrid"></div>
+
+      <div class="protocol-surface glass-card">
+        <div class="section-header compact">
+          <div>
+            <span class="surface-kicker">Migration protocol</span>
+            <h2>Provider-flexible, consistency-strict.</h2>
+            <p class="table-note">Synqora can orchestrate AWS DMS, Qlik/HVR, GoldenGate, Debezium, ora2pg, pgloader, or custom loaders while preserving one migration evidence model.</p>
+          </div>
+        </div>
+        <div class="protocol-grid">
+          <div class="protocol-card"><span>Mode 1</span><strong>Global Snapshot</strong><p>One checkpoint for the full migration run when source retention supports it.</p></div>
+          <div class="protocol-card"><span>Mode 2</span><strong>Schema Wave</strong><p>One checkpoint per application/schema wave for phased programs.</p></div>
+          <div class="protocol-card"><span>Mode 3</span><strong>Table-Level</strong><p>Per-table checkpoints for huge or high-change tables.</p></div>
+        </div>
+      </div>
 
       <div class="glass-card service-inventory">
         <div class="service-inventory-header">
@@ -1245,6 +1303,21 @@
         </div>
       </div>
 
+      <div class="protocol-surface glass-card">
+        <div class="section-header compact">
+          <div>
+            <span class="surface-kicker">Load protocol</span>
+            <h2>Full load is a checkpointed chunk manifest, not one giant copy.</h2>
+            <p class="table-note">A 5 TB table should be split by partition, primary-key range, ROWID range, date window, or hash bucket. Every chunk records source checkpoint, row count, checksum, retry state, and provider evidence.</p>
+          </div>
+        </div>
+        <div class="transport-grid">
+          <div class="transport-card"><span>Cloud native</span><strong>AWS DMS</strong><p>Managed table mappings, full-load tasks, CDC checkpoints, and lag metrics.</p></div>
+          <div class="transport-card"><span>Commercial</span><strong>Qlik/HVR/GoldenGate</strong><p>Enterprise replication and high-throughput CDC with operational dashboards.</p></div>
+          <div class="transport-card"><span>Open source</span><strong>ora2pg / pgloader / Debezium</strong><p>Batch conversion, PostgreSQL COPY paths, or Kafka-based CDC where appropriate.</p></div>
+        </div>
+      </div>
+
       <!-- Table Load Progress -->
       <div class="glass-card">
         <h3>Table Load Progress</h3>
@@ -1311,6 +1384,24 @@
         <div class="header-actions">
           <button class="btn btn-ghost">Stop Stream</button>
           <button class="btn btn-primary">Start CDC</button>
+        </div>
+      </div>
+
+      <div class="protocol-surface glass-card">
+        <div class="section-header compact">
+          <div>
+            <span class="surface-kicker">CDC consistency</span>
+            <h2>CDC starts from the approved snapshot boundary.</h2>
+            <p class="table-note">Synqora should validate archive logging, supplemental logging, source privileges, provider support, retention window, key quality, and target apply readiness before CDC can start.</p>
+          </div>
+        </div>
+        <div class="protocol-gates">
+          <span>Archive logging verified</span>
+          <span>Supplemental logging verified</span>
+          <span>SCN/checkpoint captured</span>
+          <span>Provider task healthy</span>
+          <span>Apply checkpoint durable</span>
+          <span>Lag under threshold</span>
         </div>
       </div>
 

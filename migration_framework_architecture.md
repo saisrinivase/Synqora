@@ -869,6 +869,44 @@ Validation should not stop at row counts.
 
 ## 16. CDC / Replication Design Details
 
+Synqora should treat data movement as a pluggable transport layer. Customers may choose AWS DMS, Qlik Replicate, HVR, Oracle GoldenGate, Debezium/Kafka, ora2pg, pgloader, file-based unload/load, object-storage pipelines, or custom scripts. Synqora does not need to own every byte-copy engine on day one.
+
+Synqora must own the migration protocol:
+
+- snapshot or checkpoint boundary
+- consistency mode selection
+- table and chunk plan
+- CDC start point
+- checkpoint and resume evidence
+- row, checksum, semantic, and business validation
+- CDC lag and apply visibility
+- cutover readiness gates
+
+This lets the product support both commercial and open-source tooling without giving up migration correctness.
+
+### Transport Provider Options
+
+| Provider | Type | Best Fit | Synqora Control Point |
+| --- | --- | --- | --- |
+| AWS DMS | Cloud native | AWS migrations needing managed full-load and CDC | task configuration, start SCN/checkpoint, table mapping, lag, validation |
+| Qlik Replicate / HVR | Commercial | High-throughput enterprise heterogeneous replication | endpoint readiness, task orchestration, checkpoints, monitoring, reconciliation |
+| Oracle GoldenGate | Commercial | Oracle-heavy low-downtime migrations | extract/replicat checkpoint, trail health, transaction order, lag |
+| Debezium / Kafka Connect | Open source | Event-streaming teams and custom CDC pipelines | connector offset, topic health, schema evolution, apply validation |
+| ora2pg / pgloader | Open source | Smaller migrations, schema/data conversion, controlled batch loads | object scope, load batches, error capture, validation |
+| Custom unload/load | Customer managed | Data Pump, external tables, files, object storage, COPY, or provider-specific bulk paths | chunk manifest, file checksums, load status, retry and reconciliation |
+
+### Consistency Modes
+
+Synqora should support three consistency modes and select/recommend them during assessment.
+
+| Mode | Description | Best Fit | Main Risk |
+| --- | --- | --- | --- |
+| Global Snapshot Mode | One SCN/checkpoint for all schemas and tables | highest correctness, simpler CDC contract | undo/log retention may not survive very long full loads |
+| Schema Wave Snapshot Mode | One SCN/checkpoint per dependency-aware schema or application wave | phased enterprise migrations | cross-wave dependencies require explicit planning |
+| Table-Level Snapshot Mode | One SCN/checkpoint per table or table group | very large/hot tables and long-running programs | most complex CDC apply and validation model |
+
+The assessment engine should evaluate undo retention, archive log retention, redo volume, table size, key quality, partitioning, LOB profile, change rate, dependency graph, and tool support before recommending a mode.
+
 ### Functional Requirements
 
 - consistent snapshot boundary

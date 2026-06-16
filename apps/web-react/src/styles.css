@@ -502,6 +502,78 @@ label {
   color: inherit;
 }
 
+.protocol-surface {
+  margin: 18px 0;
+}
+
+.protocol-surface h2 {
+  margin: 4px 0;
+  font-size: clamp(1.35rem, 2.4vw, 2rem);
+  letter-spacing: -0.04em;
+}
+
+.protocol-grid,
+.transport-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.protocol-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.transport-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.protocol-card,
+.transport-card {
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel-strong);
+}
+
+.protocol-card span,
+.transport-card span {
+  display: inline-block;
+  margin-bottom: 8px;
+  color: var(--accent);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.protocol-card strong,
+.transport-card strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.protocol-card p,
+.transport-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.gate-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.gate-strip span {
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(15, 118, 110, 0.08);
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
 .panel {
   display: grid;
   gap: 13px;
@@ -636,6 +708,8 @@ label {
   .services-grid,
   .services-hero,
   .services-counts,
+  .protocol-grid,
+  .transport-grid,
   .fact-grid {
     grid-template-columns: 1fr;
   }

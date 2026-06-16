@@ -824,6 +824,82 @@ Key fields:
 
 ## 8.8 Data Load
 
+### `migration_protocol_plan`
+
+Purpose:
+
+- product-level consistency and transport contract for a migration run
+- separates Synqora governance from the chosen copy/CDC tool
+
+Key fields:
+
+- `protocol_plan_id`
+- `tenant_id`
+- `project_id`
+- `workflow_run_id`
+- `transport_provider`
+- `transport_provider_type`
+- `consistency_mode`
+- `source_checkpoint_kind`
+- `source_checkpoint_value`
+- `cdc_start_checkpoint_value nullable`
+- `snapshot_captured_at nullable`
+- `status`
+- `risk_level`
+- `assessment_summary_json`
+- `created_at`
+- `approved_at nullable`
+
+Examples:
+
+- `transport_provider`: `aws_dms`, `qlik_replicate`, `hvr`, `goldengate`, `debezium`, `ora2pg`, `pgloader`, `custom_unload_load`
+- `transport_provider_type`: `cloud_native`, `commercial`, `open_source`, `customer_managed`
+- `consistency_mode`: `global_snapshot`, `schema_wave_snapshot`, `table_level_snapshot`
+- `source_checkpoint_kind`: `oracle_scn`, `goldengate_trail`, `dms_checkpoint`, `kafka_offset`, `file_manifest`
+
+### `migration_wave`
+
+Purpose:
+
+- dependency-aware schema/application/table group for phased migrations
+- supports global, schema-wave, and table-level snapshot strategies
+
+Key fields:
+
+- `migration_wave_id`
+- `tenant_id`
+- `protocol_plan_id`
+- `wave_name`
+- `wave_order`
+- `object_scope_json`
+- `source_checkpoint_value`
+- `cdc_start_checkpoint_value nullable`
+- `status`
+- `dependency_notes_json`
+- `validation_status`
+
+### `chunk_manifest`
+
+Purpose:
+
+- approved chunking strategy before full-load jobs are created
+- enables retry, evidence, and transport-provider handoff
+
+Key fields:
+
+- `chunk_manifest_id`
+- `tenant_id`
+- `protocol_plan_id`
+- `migration_wave_id nullable`
+- `source_object_name`
+- `target_object_name`
+- `chunk_strategy`
+- `chunk_count`
+- `estimated_bytes`
+- `estimated_rows`
+- `provider_settings_json`
+- `status`
+
 ### `load_run`
 
 Purpose:
@@ -836,6 +912,8 @@ Key fields:
 - `tenant_id`
 - `project_id`
 - `workflow_run_id`
+- `protocol_plan_id nullable`
+- `transport_provider`
 - `source_environment_id`
 - `target_environment_id`
 - `status`
@@ -854,6 +932,7 @@ Key fields:
 - `load_table_run_id`
 - `tenant_id`
 - `load_run_id`
+- `chunk_manifest_id nullable`
 - `source_object_name`
 - `target_object_name`
 - `status`
@@ -911,6 +990,8 @@ Key fields:
 - `cdc_stream_id`
 - `tenant_id`
 - `project_id`
+- `protocol_plan_id nullable`
+- `transport_provider`
 - `source_environment_id`
 - `target_environment_id`
 - `stream_name`

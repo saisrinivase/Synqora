@@ -115,6 +115,44 @@ The first concrete ruleset is now:
 - cutover management
 - post-cutover hypercare
 
+## Transport-Agnostic Migration Protocol
+
+Synqora should let customers choose the data movement transport while Synqora enforces the migration protocol.
+
+Supported transport directions:
+
+- `Cloud native`: AWS DMS and equivalent managed migration services
+- `Commercial replication`: Qlik Replicate, HVR, Oracle GoldenGate, and similar enterprise CDC platforms
+- `Open source`: Debezium/Kafka Connect, ora2pg, pgloader, PostgreSQL COPY-based loaders
+- `Customer managed`: Oracle Data Pump, files, object storage, external tables, custom unload/load scripts, and provider-specific bulk paths
+
+Synqora owns the consistency contract around those tools:
+
+- snapshot or checkpoint boundary
+- global, schema-wave, or table-level consistency mode
+- chunk manifest and retry plan
+- CDC start checkpoint
+- full-load and CDC evidence
+- row-count, checksum, semantic, and business validation
+- CDC lag and cutover gates
+
+Consistency modes:
+
+1. `Global Snapshot Mode`
+- one SCN/checkpoint for all schemas and tables
+- best correctness and simplest CDC model
+- requires source undo/log retention to survive the load window
+
+2. `Schema Wave Snapshot Mode`
+- one SCN/checkpoint per dependency-aware schema or application wave
+- better for phased enterprise migrations
+- requires explicit cross-wave dependency validation
+
+3. `Table-Level Snapshot Mode`
+- one SCN/checkpoint per table or table group
+- useful for 5 TB+ tables, hot tables, and very long migrations
+- requires the strongest CDC, reconciliation, and cutover evidence
+
 ## Product Modes
 
 1. `Assessment Only`

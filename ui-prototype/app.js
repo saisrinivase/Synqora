@@ -696,8 +696,15 @@ function renderServicesConsole(payload) {
       view: 'converter'
     },
     {
+      name: 'Transport Providers',
+      description: 'AWS DMS, Qlik/HVR, GoldenGate, Debezium, ora2pg, pgloader, or custom unload/load under one protocol.',
+      metric: 'Bring your tool',
+      action: 'Review options',
+      view: 'dataload'
+    },
+    {
       name: 'Data Load & CDC',
-      description: 'Full-load chunking, replication readiness, lag tracking, and retry evidence.',
+      description: 'Snapshot boundary, chunk plan, CDC start point, lag tracking, retries, and validation gates.',
       metric: `${summary.dataMigratedTb || 0} TB`,
       action: 'Open load plan',
       view: 'dataload'

@@ -436,7 +436,8 @@ function ServicesView({ payload, setActiveView, onCreateConnection }: { payload:
     { name: 'Agents & Connectivity', description: 'Customer-side execution plane for network checks, secrets, discovery, and validation.', metric: 'Agent ready', view: 'services' },
     { name: 'Assessment', description: 'Oracle source discovery, risk detection, and evidence snapshots.', metric: `${jobs.filter((job) => job.jobType.includes('assessment') || job.jobType.includes('discover')).length} jobs`, view: 'assessment' },
     { name: 'Schema Conversion', description: 'DDL, datatype, PL/SQL, trigger, sequence, and partition conversion.', metric: `${payload?.summary.averageConversionRatePct || 0}%`, view: 'converter' },
-    { name: 'Data Load & CDC', description: 'Full-load chunking, replication readiness, lag tracking, and retries.', metric: `${payload?.summary.dataMigratedTb || 0} TB`, view: 'dataload' },
+    { name: 'Transport Providers', description: 'AWS DMS, Qlik/HVR, GoldenGate, Debezium, ora2pg, pgloader, or custom unload/load under one protocol.', metric: 'Bring your tool', view: 'dataload' },
+    { name: 'Data Load & CDC', description: 'Snapshot boundary, chunk plan, CDC start point, lag tracking, retries, and validation gates.', metric: `${payload?.summary.dataMigratedTb || 0} TB`, view: 'dataload' },
     { name: 'Validation', description: 'Schema, code, row-count, checksum, and business-rule comparison.', metric: `${jobs.filter((job) => job.jobType.includes('validation')).length} checks`, view: 'validation' },
     { name: 'Evidence & Audit', description: 'Issue history, rule decisions, approvals, cutover gates, and remediation notes.', metric: `${jobs.length} events`, view: 'cutover' }
   ];
@@ -470,6 +471,7 @@ function ServicesView({ payload, setActiveView, onCreateConnection }: { payload:
           </button>
         ))}
       </div>
+      <ProtocolSurface />
       <section className="panel">
         <h2>Database Inventory</h2>
         <p className="muted">Reusable Oracle and PostgreSQL connection profiles for this tenant. Troubleshooting starts here.</p>
@@ -606,6 +608,40 @@ function ReadinessView({ view, project, jobs }: { view: ReadinessViewKey; projec
           ['Required Gate', state.gate]
         ]}
       />
+      {(view === 'dataload' || view === 'cdc' || view === 'validation' || view === 'cutover') && <ProtocolSurface />}
+    </section>
+  );
+}
+
+function ProtocolSurface() {
+  return (
+    <section className="protocol-surface panel">
+      <div>
+        <span className="eyebrow">Synqora protocol</span>
+        <h2>Choose the data transport. Synqora controls consistency.</h2>
+        <p className="muted">Customers can use commercial, cloud-native, open-source, or custom movement tools. Synqora still enforces the migration contract: snapshot point, chunk plan, CDC start point, checkpoint evidence, validation, and cutover gates.</p>
+      </div>
+      <div className="protocol-grid">
+        {consistencyModes.map((mode) => (
+          <div className="protocol-card" key={mode.name}>
+            <span>{mode.fit}</span>
+            <strong>{mode.name}</strong>
+            <p>{mode.description}</p>
+          </div>
+        ))}
+      </div>
+      <div className="transport-grid">
+        {transportOptions.map((option) => (
+          <div className="transport-card" key={option.name}>
+            <span>{option.category}</span>
+            <strong>{option.name}</strong>
+            <p>{option.useCase}</p>
+          </div>
+        ))}
+      </div>
+      <div className="gate-strip">
+        {protocolGates.map((gate) => <span key={gate}>{gate}</span>)}
+      </div>
     </section>
   );
 }
@@ -696,18 +732,18 @@ const readinessCopy: Record<ReadinessViewKey, { title: string; projectText: stri
   },
   dataload: {
     title: 'Data load requires a target and approved load plan',
-    projectText: 'Attach a PostgreSQL target, approve chunking, and generate load jobs before monitoring throughput.',
-    gate: 'Target + load plan'
+    projectText: 'Attach a PostgreSQL target, choose the transport provider, approve the consistency mode, capture the snapshot boundary, and generate resumable chunk jobs before loading.',
+    gate: 'Target + protocol + load plan'
   },
   cdc: {
     title: 'CDC is disabled until replication prerequisites are approved',
-    projectText: 'Validate supplemental logging, source privileges, target apply schema, and rollback strategy before starting CDC.',
-    gate: 'CDC prerequisites'
+    projectText: 'Validate archive logging, supplemental logging, source privileges, provider feasibility, checkpoint retention, target apply schema, and rollback strategy before starting CDC capture.',
+    gate: 'CDC prerequisites + start checkpoint'
   },
   validation: {
     title: 'Validation runs after schema deployment and data load',
-    projectText: 'Run schema, row-count, checksum, semantic, and performance validations after target deployment.',
-    gate: 'Deployment + data load'
+    projectText: 'Run schema, row-count, chunk checksum, CDC checkpoint, semantic, and business-rule validations after target deployment and before cutover eligibility.',
+    gate: 'Deployment + load + CDC evidence'
   },
   cutover: {
     title: 'Cutover controls remain locked until gates pass',
@@ -715,6 +751,43 @@ const readinessCopy: Record<ReadinessViewKey, { title: string; projectText: stri
     gate: 'Cutover gates'
   }
 };
+
+const consistencyModes = [
+  {
+    name: 'Global Snapshot Mode',
+    fit: 'Best correctness',
+    description: 'One Oracle SCN/checkpoint for all schemas and tables. Simplest CDC contract, but requires enough undo/log retention for long loads.'
+  },
+  {
+    name: 'Schema Wave Snapshot Mode',
+    fit: 'Enterprise phased',
+    description: 'One SCN/checkpoint per dependency-aware schema or application wave. Good for multi-schema programs migrated over weeks.'
+  },
+  {
+    name: 'Table-Level Snapshot Mode',
+    fit: 'Huge hot tables',
+    description: 'Per-table or table-group checkpoints for very large/high-change objects. Most flexible, but requires stronger CDC and validation evidence.'
+  }
+];
+
+const transportOptions = [
+  { name: 'AWS DMS', category: 'Cloud native', useCase: 'Managed full-load plus CDC for AWS-centered migrations and fast operational startup.' },
+  { name: 'Qlik Replicate / HVR', category: 'Commercial', useCase: 'High-throughput enterprise replication, heterogeneous sources, monitoring, and mature CDC operations.' },
+  { name: 'Oracle GoldenGate', category: 'Commercial', useCase: 'Oracle-heavy estates needing proven redo-based replication and low-downtime migration patterns.' },
+  { name: 'Debezium / Kafka', category: 'Open source', useCase: 'Event-streaming architecture, custom pipelines, and teams already running Kafka Connect.' },
+  { name: 'ora2pg / pgloader', category: 'Open source', useCase: 'Schema/data migration for smaller or controlled workloads where CDC is not the main requirement.' },
+  { name: 'Custom unload/load', category: 'Customer managed', useCase: 'Data Pump, external tables, files, object storage, COPY, partition exchange, or provider-specific bulk paths.' }
+];
+
+const protocolGates = [
+  'Snapshot boundary captured',
+  'Chunk plan approved',
+  'CDC start checkpoint recorded',
+  'Load checkpointed',
+  'CDC caught up',
+  'Validation passed',
+  'Cutover approved'
+];
 
 function humanizeStatus(value: string) {
   return value.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());

@@ -307,13 +307,40 @@ unless the customer explicitly enables that mode.
 
 ## 9.2 CDC Flow
 
-1. control plane creates replication stream definition
-2. agent starts snapshot boundary workflow
-3. agent performs initial full load
-4. agent starts source change capture
-5. agent normalizes and applies changes to PostgreSQL
-6. agent publishes lag and checkpoint metrics
-7. control plane monitors readiness for cutover
+1. control plane records the selected transport provider and consistency mode
+2. agent validates source logging, privileges, retention, object keys, table size, and provider prerequisites
+3. control plane creates a protocol contract: snapshot boundary, chunk manifest, CDC start checkpoint, validation gates, and cutover policy
+4. agent or external provider captures the source checkpoint before full load
+5. agent or external provider starts CDC capture from that checkpoint before or during full load
+6. full load runs with the approved chunk plan and records per-chunk evidence
+7. CDC applies changes after the captured boundary and publishes lag/checkpoint metrics
+8. validation compares full-load chunks, CDC checkpoints, and business aggregates
+9. control plane monitors readiness for cutover
+
+## 9.3 Transport Provider Strategy
+
+Synqora should not force one copy engine. The SaaS control plane should let customers choose the transport that fits their estate, licensing, cloud provider, and operations team:
+
+- AWS DMS for AWS-native managed full-load and CDC
+- Qlik Replicate or HVR for high-throughput enterprise heterogeneous replication
+- Oracle GoldenGate for Oracle-heavy low-downtime migrations
+- Debezium/Kafka Connect for open-source streaming pipelines
+- ora2pg or pgloader for open-source controlled batch/schema migration
+- customer-managed unload/load paths such as Data Pump, files, object storage, external tables, and PostgreSQL COPY
+
+Synqora's responsibility is the consistency protocol around that transport: checkpoint capture, chunk manifest, provider task evidence, validation, lag thresholds, approval gates, and rollback readiness.
+
+## 9.4 Consistency Modes
+
+Synqora should expose three consistency modes:
+
+| Mode | Customer Scenario | Product Behavior |
+| --- | --- | --- |
+| Global Snapshot Mode | Smaller or medium estates where one source checkpoint can cover all schemas | one SCN/checkpoint for the whole run, CDC starts after that boundary |
+| Schema Wave Snapshot Mode | Large enterprise migrations by application, schema, or business wave | one checkpoint per dependency-aware wave with cross-wave validation |
+| Table-Level Snapshot Mode | 5 TB+ tables, hot tables, or very long migrations | per-table/table-group checkpoints with stronger CDC and reconciliation gates |
+
+Assessment must recommend the mode and explain risks such as `ORA-01555`, missing supplemental logging, insufficient archive retention, tables without primary keys, LOB-heavy change streams, and provider limitations.
 
 ## 10. Agent Footprint
 
