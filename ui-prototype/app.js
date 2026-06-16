@@ -482,6 +482,7 @@ function setActiveView(viewId) {
   const targetView = document.getElementById(`view-${viewId}`);
   if (targetView) {
     targetView.classList.add('active');
+    targetView.scrollTop = 0;
     targetView.style.animation = 'none';
     targetView.offsetHeight;
     targetView.style.animation = '';

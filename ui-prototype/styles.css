@@ -57,7 +57,10 @@
   --shadow-card: 0 4px 24px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
   --shadow-glow: 0 0 40px rgba(124,58,237,0.12);
 }
-html { font-size: 14px; }
+html {
+  height: 100%;
+  font-size: 14px;
+}
 body {
   font-family: var(--font-sans);
   background:
@@ -80,6 +83,8 @@ body.authenticated .login-shell,
 body.authenticated .public-site { display: none; }
 body.authenticated {
   display: flex;
+  height: 100vh;
+  max-height: 100vh;
   overflow: hidden;
 }
 body.authenticated .sidebar,
@@ -874,6 +879,9 @@ body.authenticated .main-content { display: flex; }
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  height: 100vh;
   overflow: hidden;
   background:
     linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,255,255,0.22)),
@@ -957,7 +965,10 @@ body.authenticated .main-content { display: flex; }
 .view {
   display: none;
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   padding: 24px;
   animation: viewFadeIn 0.35s ease;
 }
