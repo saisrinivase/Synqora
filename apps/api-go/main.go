@@ -21,6 +21,7 @@ const (
 	demoEmail         = "sai@example.com"
 	demoPassword      = "Synqora_123"
 	demoTenantName    = "Synqora Demo Tenant"
+	demoAgentToken    = "synqora-demo-token"
 )
 
 type Server struct {
@@ -43,8 +44,14 @@ type Store struct {
 	userRole    map[string]string
 	projects    []Project
 	connections []Connection
+	agentPools  []AgentPool
+	agentTokens map[string]string
+	agents      []Agent
+	heartbeats  []AgentHeartbeat
 	workflows   []Workflow
 	jobs        []Job
+	checkpoints []JobCheckpoint
+	transitions []StateTransition
 }
 
 type AuthContext struct {
@@ -115,6 +122,45 @@ type Connection struct {
 	UpdatedAt       string                 `json:"updatedAt"`
 }
 
+type AgentPool struct {
+	AgentPoolID  string   `json:"agentPoolId"`
+	TenantID     string   `json:"tenantId"`
+	PoolName     string   `json:"poolName"`
+	PoolType     string   `json:"poolType"`
+	RegionName   string   `json:"regionName"`
+	Status       string   `json:"status"`
+	Capabilities []string `json:"capabilities"`
+	CreatedAt    string   `json:"createdAt"`
+	UpdatedAt    string   `json:"updatedAt"`
+}
+
+type Agent struct {
+	AgentID         string   `json:"agentId"`
+	TenantID        string   `json:"tenantId"`
+	AgentPoolID     string   `json:"agentPoolId"`
+	AgentName       string   `json:"agentName"`
+	AgentVersion    string   `json:"agentVersion"`
+	PlatformType    string   `json:"platformType"`
+	RuntimeMode     string   `json:"runtimeMode"`
+	Status          string   `json:"status"`
+	RegisteredAt    string   `json:"registeredAt"`
+	LastHeartbeatAt string   `json:"lastHeartbeatAt,omitempty"`
+	Capabilities    []string `json:"capabilities"`
+	CreatedAt       string   `json:"createdAt"`
+	UpdatedAt       string   `json:"updatedAt"`
+}
+
+type AgentHeartbeat struct {
+	HeartbeatID    string                 `json:"heartbeatId"`
+	TenantID       string                 `json:"tenantId"`
+	AgentID        string                 `json:"agentId"`
+	HeartbeatAt    string                 `json:"heartbeatAt"`
+	HealthStatus   string                 `json:"healthStatus"`
+	ActiveJobCount int                    `json:"activeJobCount"`
+	Metrics        map[string]interface{} `json:"metricsJson"`
+	CreatedAt      string                 `json:"createdAt"`
+}
+
 type Workflow struct {
 	WorkflowRunID string `json:"workflowRunId"`
 	TenantID      string `json:"tenantId"`
@@ -135,11 +181,40 @@ type Job struct {
 	Status             string                 `json:"status"`
 	Priority           string                 `json:"priority"`
 	CapabilityRequired string                 `json:"capabilityRequired"`
+	LeaseExpiresAt     string                 `json:"leaseExpiresAt,omitempty"`
+	LeasedToAgentID    string                 `json:"leasedToAgentId,omitempty"`
 	AttemptCount       int                    `json:"attemptCount"`
 	MaxAttempts        int                    `json:"maxAttempts"`
 	Payload            map[string]interface{} `json:"payload"`
+	Result             map[string]interface{} `json:"result,omitempty"`
+	Failure            map[string]interface{} `json:"failure,omitempty"`
+	StartedAt          string                 `json:"startedAt,omitempty"`
+	CompletedAt        string                 `json:"completedAt,omitempty"`
 	CreatedAt          string                 `json:"createdAt"`
 	UpdatedAt          string                 `json:"updatedAt"`
+}
+
+type JobCheckpoint struct {
+	CheckpointID    string                 `json:"checkpointId"`
+	TenantID        string                 `json:"tenantId"`
+	JobRunID        string                 `json:"jobRunId"`
+	CheckpointType  string                 `json:"checkpointType"`
+	CheckpointKey   string                 `json:"checkpointKey"`
+	CheckpointState map[string]interface{} `json:"checkpointState"`
+	CapturedAt      string                 `json:"capturedAt"`
+	CreatedAt       string                 `json:"createdAt"`
+}
+
+type StateTransition struct {
+	EventID    string                 `json:"eventId"`
+	TenantID   string                 `json:"tenantId"`
+	EntityType string                 `json:"entityType"`
+	EntityID   string                 `json:"entityId"`
+	FromStatus string                 `json:"fromStatus,omitempty"`
+	ToStatus   string                 `json:"toStatus"`
+	ReasonCode string                 `json:"reasonCode,omitempty"`
+	Details    map[string]interface{} `json:"detailsJson"`
+	OccurredAt string                 `json:"occurredAt"`
 }
 
 func main() {
@@ -160,6 +235,12 @@ func main() {
 	mux.HandleFunc("/api/v1/projects", server.withAuth(server.handleProjects))
 	mux.HandleFunc("/api/v1/connections", server.withAuth(server.handleConnections))
 	mux.HandleFunc("/api/v1/projects/", server.withAuth(server.handleProjectRoutes))
+	mux.HandleFunc("/api/v1/agents", server.withAuth(server.handleAgents))
+	mux.HandleFunc("/api/v1/jobs", server.withAuth(server.handleJobs))
+	mux.HandleFunc("/api/v1/agent/register", server.handleAgentRegister)
+	mux.HandleFunc("/api/v1/agent/heartbeat", server.withAgent(server.handleAgentHeartbeat))
+	mux.HandleFunc("/api/v1/agent/jobs/poll", server.withAgent(server.handleAgentJobsPoll))
+	mux.HandleFunc("/api/v1/agent/jobs/", server.withAgent(server.handleAgentJobRoutes))
 
 	addr := host + ":" + port
 	log.Printf("Synqora Go API listening on http://%s", addr)
@@ -186,6 +267,17 @@ func NewStore() *Store {
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}
+	agentPool := AgentPool{
+		AgentPoolID:  newID("agentpool"),
+		TenantID:     tenant.TenantID,
+		PoolName:     "customer-prod-east",
+		PoolType:     "shared",
+		RegionName:   "us-east-1",
+		Status:       "active",
+		Capabilities: defaultCapabilities(),
+		CreatedAt:    now,
+		UpdatedAt:    now,
+	}
 	return &Store{
 		tenants:     []Tenant{tenant},
 		users:       []User{user},
@@ -194,8 +286,14 @@ func NewStore() *Store {
 		userRole:    map[string]string{demoEmail: "admin"},
 		projects:    []Project{},
 		connections: []Connection{},
+		agentPools:  []AgentPool{agentPool},
+		agentTokens: map[string]string{demoAgentToken: agentPool.AgentPoolID},
+		agents:      []Agent{},
+		heartbeats:  []AgentHeartbeat{},
 		workflows:   []Workflow{},
 		jobs:        []Job{},
+		checkpoints: []JobCheckpoint{},
+		transitions: []StateTransition{},
 	}
 }
 
@@ -307,6 +405,24 @@ func (s *Store) ListProjects(ctx AuthContext) []Project {
 	return s.tenantProjects(ctx.Tenant.TenantID)
 }
 
+func (s *Store) ListAgents(ctx AuthContext) []Agent {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	items := []Agent{}
+	for _, agent := range s.agents {
+		if agent.TenantID == ctx.Tenant.TenantID && agent.Status != "retired" {
+			items = append(items, agent)
+		}
+	}
+	return items
+}
+
+func (s *Store) ListJobs(ctx AuthContext) []Job {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.tenantJobs(ctx.Tenant.TenantID)
+}
+
 func (s *Store) CreateProject(ctx AuthContext, input map[string]interface{}) (Project, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -341,6 +457,10 @@ func (s *Store) CreateProject(ctx AuthContext, input map[string]interface{}) (Pr
 		UpdatedAt:           now,
 	}
 	s.projects = append(s.projects, project)
+	s.recordTransitionLocked(ctx.Tenant.TenantID, "migration_project", project.ProjectID, "", "draft", "project_created", map[string]interface{}{
+		"projectCode":    code,
+		"engagementMode": mode,
+	})
 	return project, nil
 }
 
@@ -394,6 +514,10 @@ func (s *Store) CreateConnection(ctx AuthContext, input map[string]interface{}) 
 		UpdatedAt: now,
 	}
 	s.connections = append(s.connections, connection)
+	s.recordTransitionLocked(ctx.Tenant.TenantID, "environment", connection.EnvironmentID, "", "pending_validation", "connection_profile_created", map[string]interface{}{
+		"projectId":      project.ProjectID,
+		"connectionRole": role,
+	})
 
 	project.Status = "connection_pending"
 	project.PipelineStage = "connectivity"
@@ -452,6 +576,218 @@ func (s *Store) ProjectOverview(ctx AuthContext, projectID string) (map[string]i
 		},
 		"pipeline": buildPipeline(project.PipelineStage, project.Status),
 	}, nil
+}
+
+func (s *Store) RegisterAgent(input map[string]interface{}) (map[string]interface{}, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	registrationToken := strings.TrimSpace(stringValue(input, "registrationToken"))
+	agentPoolID, ok := s.agentTokens[registrationToken]
+	if registrationToken == "" || !ok {
+		return nil, errors.New("registration token is invalid, expired, or exhausted")
+	}
+	var pool AgentPool
+	for _, item := range s.agentPools {
+		if item.AgentPoolID == agentPoolID && item.Status == "active" {
+			pool = item
+			break
+		}
+	}
+	if pool.AgentPoolID == "" {
+		return nil, errors.New("agent pool is not active")
+	}
+
+	now := nowISO()
+	capabilities := stringSliceValue(input["capabilities"])
+	if len(capabilities) == 0 {
+		capabilities = append([]string{}, pool.Capabilities...)
+	}
+	agentID := newID("agent")
+	accessToken := newID("synqora_agent")
+	agent := Agent{
+		AgentID:      agentID,
+		TenantID:     pool.TenantID,
+		AgentPoolID:  pool.AgentPoolID,
+		AgentName:    firstNonEmpty(stringValue(input, "agentName"), "agent-"+agentID[len(agentID)-8:]),
+		AgentVersion: firstNonEmpty(stringValue(input, "agentVersion"), "0.1.0"),
+		PlatformType: firstNonEmpty(stringValue(input, "platformType"), "unknown"),
+		RuntimeMode:  firstNonEmpty(stringValue(input, "runtimeMode"), "docker"),
+		Status:       "active",
+		RegisteredAt: now,
+		Capabilities: capabilities,
+		CreatedAt:    now,
+		UpdatedAt:    now,
+	}
+	s.agents = append(s.agents, agent)
+	s.agentTokens[accessToken] = agent.AgentID
+	s.recordTransitionLocked(agent.TenantID, "agent_instance", agent.AgentID, "", "active", "agent_registered", map[string]interface{}{
+		"agentPoolId": agent.AgentPoolID,
+	})
+
+	return map[string]interface{}{
+		"agent":                    agent,
+		"accessToken":              accessToken,
+		"pollIntervalSeconds":      10,
+		"heartbeatIntervalSeconds": 30,
+	}, nil
+}
+
+func (s *Store) AuthenticateAgent(accessToken string) (Agent, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	agentID, ok := s.agentTokens[strings.TrimSpace(accessToken)]
+	if !ok || agentID == "" {
+		return Agent{}, errors.New("missing or invalid agent access token")
+	}
+	for _, agent := range s.agents {
+		if agent.AgentID == agentID && agent.Status == "active" {
+			return agent, nil
+		}
+	}
+	return Agent{}, errors.New("agent is not active")
+}
+
+func (s *Store) HeartbeatAgent(agent Agent, input map[string]interface{}) (AgentHeartbeat, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	index, ok := s.findAgentIndexLocked(agent.AgentID)
+	if !ok {
+		return AgentHeartbeat{}, errors.New("agent not found")
+	}
+	now := nowISO()
+	activeJobs := 0
+	for _, job := range s.jobs {
+		if job.LeasedToAgentID == agent.AgentID && (job.Status == "leased" || job.Status == "running") {
+			activeJobs++
+		}
+	}
+	heartbeat := AgentHeartbeat{
+		HeartbeatID:    newID("heartbeat"),
+		TenantID:       agent.TenantID,
+		AgentID:        agent.AgentID,
+		HeartbeatAt:    now,
+		HealthStatus:   firstNonEmpty(stringValue(input, "healthStatus"), "healthy"),
+		ActiveJobCount: activeJobs,
+		Metrics:        mapValue(input, "metrics"),
+		CreatedAt:      now,
+	}
+	s.heartbeats = append(s.heartbeats, heartbeat)
+	s.agents[index].LastHeartbeatAt = now
+	s.agents[index].UpdatedAt = now
+	return heartbeat, nil
+}
+
+func (s *Store) PollJobs(agent Agent, maxJobs int) []Job {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if maxJobs <= 0 || maxJobs > 10 {
+		maxJobs = 1
+	}
+	now := nowISO()
+	leaseExpiresAt := time.Now().UTC().Add(5 * time.Minute).Format(time.RFC3339Nano)
+	jobs := []Job{}
+	for index, job := range s.jobs {
+		if len(jobs) >= maxJobs {
+			break
+		}
+		if job.TenantID != agent.TenantID || job.Status != "queued" || !contains(agent.Capabilities, job.CapabilityRequired) {
+			continue
+		}
+		previousStatus := job.Status
+		job.Status = "leased"
+		job.LeasedToAgentID = agent.AgentID
+		job.LeaseExpiresAt = leaseExpiresAt
+		job.AttemptCount++
+		job.UpdatedAt = now
+		s.jobs[index] = job
+		s.recordTransitionLocked(job.TenantID, "job_run", job.JobRunID, previousStatus, "leased", "job_leased", map[string]interface{}{
+			"agentId": agent.AgentID,
+		})
+		jobs = append(jobs, job)
+	}
+	return jobs
+}
+
+func (s *Store) StartJob(agent Agent, jobRunID string) (Job, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	index, err := s.assertAgentJobLocked(agent, jobRunID, "leased")
+	if err != nil {
+		return Job{}, err
+	}
+	job := s.jobs[index]
+	previousStatus := job.Status
+	now := nowISO()
+	job.Status = "running"
+	job.StartedAt = firstNonEmpty(job.StartedAt, now)
+	job.UpdatedAt = now
+	s.jobs[index] = job
+	s.recordTransitionLocked(job.TenantID, "job_run", job.JobRunID, previousStatus, "running", "job_started", map[string]interface{}{"agentId": agent.AgentID})
+	return job, nil
+}
+
+func (s *Store) CheckpointJob(agent Agent, jobRunID string, input map[string]interface{}) (JobCheckpoint, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	index, err := s.assertAgentJobLocked(agent, jobRunID, "running")
+	if err != nil {
+		return JobCheckpoint{}, err
+	}
+	now := nowISO()
+	checkpoint := JobCheckpoint{
+		CheckpointID:    newID("checkpoint"),
+		TenantID:        agent.TenantID,
+		JobRunID:        jobRunID,
+		CheckpointType:  firstNonEmpty(stringValue(input, "checkpointType"), "progress"),
+		CheckpointKey:   firstNonEmpty(stringValue(input, "checkpointKey"), fmt.Sprintf("%s:%d", s.jobs[index].JobType, time.Now().Unix())),
+		CheckpointState: mapValue(input, "checkpointState"),
+		CapturedAt:      now,
+		CreatedAt:       now,
+	}
+	s.checkpoints = append(s.checkpoints, checkpoint)
+	s.jobs[index].LeaseExpiresAt = time.Now().UTC().Add(5 * time.Minute).Format(time.RFC3339Nano)
+	s.jobs[index].UpdatedAt = now
+	return checkpoint, nil
+}
+
+func (s *Store) CompleteJob(agent Agent, jobRunID string, input map[string]interface{}) (Job, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	index, err := s.assertAgentJobLocked(agent, jobRunID, "running")
+	if err != nil {
+		return Job{}, err
+	}
+	job := s.jobs[index]
+	previousStatus := job.Status
+	now := nowISO()
+	job.Status = "succeeded"
+	job.Result = mapValueOrWhole(input, "result")
+	job.CompletedAt = now
+	job.UpdatedAt = now
+	s.jobs[index] = job
+	s.recordTransitionLocked(job.TenantID, "job_run", job.JobRunID, previousStatus, "succeeded", "job_completed", map[string]interface{}{"agentId": agent.AgentID})
+	s.enqueueFollowUpJobsLocked(job)
+	return job, nil
+}
+
+func (s *Store) FailJob(agent Agent, jobRunID string, input map[string]interface{}) (Job, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	index, err := s.assertAgentJobLocked(agent, jobRunID, "running")
+	if err != nil {
+		return Job{}, err
+	}
+	job := s.jobs[index]
+	previousStatus := job.Status
+	now := nowISO()
+	job.Status = "failed"
+	job.Failure = mapValueOrWhole(input, "failure")
+	job.CompletedAt = now
+	job.UpdatedAt = now
+	s.jobs[index] = job
+	s.recordTransitionLocked(job.TenantID, "job_run", job.JobRunID, previousStatus, "failed", "job_failed", map[string]interface{}{"agentId": agent.AgentID})
+	return job, nil
 }
 
 func (s *Store) startOracleAssessmentLocked(ctx AuthContext, project Project, source Connection) map[string]interface{} {
@@ -548,6 +884,98 @@ func (s *Store) findTenantByID(tenantID string) (Tenant, bool) {
 		}
 	}
 	return Tenant{}, false
+}
+
+func (s *Store) findAgentIndexLocked(agentID string) (int, bool) {
+	for index, agent := range s.agents {
+		if agent.AgentID == agentID {
+			return index, true
+		}
+	}
+	return -1, false
+}
+
+func (s *Store) assertAgentJobLocked(agent Agent, jobRunID, expectedStatus string) (int, error) {
+	for index, job := range s.jobs {
+		if job.JobRunID != jobRunID {
+			continue
+		}
+		if job.TenantID != agent.TenantID {
+			return -1, errors.New("job not found")
+		}
+		if job.LeasedToAgentID != agent.AgentID {
+			return -1, errors.New("job is not leased to this agent")
+		}
+		if job.Status != expectedStatus {
+			return -1, fmt.Errorf("job must be %s before this action", expectedStatus)
+		}
+		return index, nil
+	}
+	return -1, errors.New("job not found")
+}
+
+func (s *Store) enqueueFollowUpJobsLocked(completedJob Job) {
+	nextType := map[string]string{
+		"validate_oracle_connection": "discover_source_inventory",
+		"discover_source_inventory":  "assess_oracle_migration_risk",
+	}[completedJob.JobType]
+	if nextType == "" {
+		return
+	}
+	now := nowISO()
+	job := Job{
+		JobRunID:           newID("job"),
+		TenantID:           completedJob.TenantID,
+		ProjectID:          completedJob.ProjectID,
+		WorkflowRunID:      completedJob.WorkflowRunID,
+		JobType:            nextType,
+		JobVersion:         "v1",
+		Status:             "queued",
+		Priority:           completedJob.Priority,
+		CapabilityRequired: capabilityForJob(nextType),
+		MaxAttempts:        3,
+		Payload: map[string]interface{}{
+			"parentJobRunId":      completedJob.JobRunID,
+			"projectId":           completedJob.ProjectID,
+			"sourceEnvironmentId": completedJob.Payload["sourceEnvironmentId"],
+			"schemaScope":         completedJob.Payload["schemaScope"],
+		},
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+	s.jobs = append(s.jobs, job)
+	s.recordTransitionLocked(job.TenantID, "job_run", job.JobRunID, "", "queued", "follow_up_job_queued", map[string]interface{}{
+		"parentJobRunId": completedJob.JobRunID,
+	})
+	for index, project := range s.projects {
+		if project.ProjectID != completedJob.ProjectID || project.TenantID != completedJob.TenantID {
+			continue
+		}
+		if nextType == "discover_source_inventory" {
+			project.PipelineStage = "discovery"
+			project.Status = "discovery_queued"
+		}
+		if nextType == "assess_oracle_migration_risk" {
+			project.PipelineStage = "assessment"
+			project.Status = "assessment_running"
+		}
+		project.UpdatedAt = now
+		s.projects[index] = project
+	}
+}
+
+func (s *Store) recordTransitionLocked(tenantID, entityType, entityID, fromStatus, toStatus, reasonCode string, details map[string]interface{}) {
+	s.transitions = append(s.transitions, StateTransition{
+		EventID:    newID("event"),
+		TenantID:   tenantID,
+		EntityType: entityType,
+		EntityID:   entityID,
+		FromStatus: fromStatus,
+		ToStatus:   toStatus,
+		ReasonCode: reasonCode,
+		Details:    details,
+		OccurredAt: nowISO(),
+	})
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
@@ -654,6 +1082,110 @@ func (s *Server) handleConnections(w http.ResponseWriter, r *http.Request, ctx A
 	writeJSON(w, http.StatusCreated, payload)
 }
 
+func (s *Server) handleAgents(w http.ResponseWriter, r *http.Request, ctx AuthContext) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{"agents": s.store.ListAgents(ctx)})
+}
+
+func (s *Server) handleJobs(w http.ResponseWriter, r *http.Request, ctx AuthContext) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{"jobs": s.store.ListJobs(ctx)})
+}
+
+func (s *Server) handleAgentRegister(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+	var input map[string]interface{}
+	if err := readJSON(r, &input); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	payload, err := s.store.RegisterAgent(input)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusCreated, payload)
+}
+
+func (s *Server) handleAgentHeartbeat(w http.ResponseWriter, r *http.Request, agent Agent) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+	var input map[string]interface{}
+	if err := readJSON(r, &input); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	heartbeat, err := s.store.HeartbeatAgent(agent, input)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{"heartbeat": heartbeat, "agent": agent})
+}
+
+func (s *Server) handleAgentJobsPoll(w http.ResponseWriter, r *http.Request, agent Agent) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+	var input map[string]interface{}
+	if err := readJSON(r, &input); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{"jobs": s.store.PollJobs(agent, intValue(input, "maxJobs"))})
+}
+
+func (s *Server) handleAgentJobRoutes(w http.ResponseWriter, r *http.Request, agent Agent) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+	path := strings.TrimPrefix(r.URL.Path, "/api/v1/agent/jobs/")
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	if len(parts) != 2 {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "not found"})
+		return
+	}
+	jobRunID, action := parts[0], parts[1]
+	var input map[string]interface{}
+	if err := readJSON(r, &input); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	switch action {
+	case "start":
+		job, err := s.store.StartJob(agent, jobRunID)
+		writeJobOrError(w, job, err)
+	case "checkpoint":
+		checkpoint, err := s.store.CheckpointJob(agent, jobRunID, input)
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]interface{}{"checkpoint": checkpoint})
+	case "complete":
+		job, err := s.store.CompleteJob(agent, jobRunID, input)
+		writeJobOrError(w, job, err)
+	case "fail":
+		job, err := s.store.FailJob(agent, jobRunID, input)
+		writeJobOrError(w, job, err)
+	default:
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "not found"})
+	}
+}
+
 func (s *Server) handleProjectRoutes(w http.ResponseWriter, r *http.Request, ctx AuthContext) {
 	path := strings.TrimPrefix(r.URL.Path, "/api/v1/projects/")
 	if strings.HasSuffix(path, "/overview") && r.Method == http.MethodGet {
@@ -681,6 +1213,17 @@ func (s *Server) withAuth(next func(http.ResponseWriter, *http.Request, AuthCont
 	}
 }
 
+func (s *Server) withAgent(next func(http.ResponseWriter, *http.Request, Agent)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		agent, err := s.store.AuthenticateAgent(bearerToken(r))
+		if err != nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
+		next(w, r, agent)
+	}
+}
+
 func (s *Server) sessionContext(r *http.Request) (AuthContext, bool) {
 	cookie, err := r.Cookie(sessionCookieName)
 	if err != nil || cookie.Value == "" {
@@ -694,6 +1237,15 @@ func (s *Server) sessionContext(r *http.Request) (AuthContext, bool) {
 		return AuthContext{}, false
 	}
 	return session.Context, true
+}
+
+func bearerToken(r *http.Request) string {
+	value := r.Header.Get("Authorization")
+	parts := strings.SplitN(value, " ", 2)
+	if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
+		return ""
+	}
+	return strings.TrimSpace(parts[1])
 }
 
 func (s *Server) createSession(w http.ResponseWriter, ctx AuthContext) {
@@ -731,6 +1283,14 @@ func writeJSON(w http.ResponseWriter, status int, payload interface{}) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(payload)
+}
+
+func writeJobOrError(w http.ResponseWriter, job Job, err error) {
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{"job": job})
 }
 
 func nowISO() string {
@@ -780,6 +1340,25 @@ func boolValue(input map[string]interface{}, key string) bool {
 	}
 }
 
+func intValue(input map[string]interface{}, key string) int {
+	value, ok := input[key]
+	if !ok {
+		return 0
+	}
+	switch typed := value.(type) {
+	case int:
+		return typed
+	case float64:
+		return int(typed)
+	case string:
+		var output int
+		_, _ = fmt.Sscanf(typed, "%d", &output)
+		return output
+	default:
+		return 0
+	}
+}
+
 func firstNonEmpty(values ...string) string {
 	for _, value := range values {
 		if strings.TrimSpace(value) != "" {
@@ -787,6 +1366,72 @@ func firstNonEmpty(values ...string) string {
 		}
 	}
 	return ""
+}
+
+func stringSliceValue(value interface{}) []string {
+	switch typed := value.(type) {
+	case []string:
+		return typed
+	case []interface{}:
+		items := []string{}
+		for _, item := range typed {
+			if text := strings.TrimSpace(fmt.Sprint(item)); text != "" {
+				items = append(items, text)
+			}
+		}
+		return items
+	case string:
+		return splitCSV(typed)
+	default:
+		return []string{}
+	}
+}
+
+func mapValue(input map[string]interface{}, key string) map[string]interface{} {
+	value, ok := input[key]
+	if !ok || value == nil {
+		return map[string]interface{}{}
+	}
+	if typed, ok := value.(map[string]interface{}); ok {
+		return typed
+	}
+	return map[string]interface{}{"value": value}
+}
+
+func mapValueOrWhole(input map[string]interface{}, key string) map[string]interface{} {
+	if nested := mapValue(input, key); len(nested) > 0 {
+		return nested
+	}
+	if input == nil {
+		return map[string]interface{}{}
+	}
+	return input
+}
+
+func contains(items []string, expected string) bool {
+	for _, item := range items {
+		if item == expected {
+			return true
+		}
+	}
+	return false
+}
+
+func defaultCapabilities() []string {
+	return []string{"connectivity", "discovery", "assessment", "conversion", "deployment", "load", "cdc", "validation"}
+}
+
+func capabilityForJob(jobType string) string {
+	switch jobType {
+	case "validate_oracle_connection":
+		return "connectivity"
+	case "discover_source_inventory":
+		return "discovery"
+	case "assess_oracle_migration_risk":
+		return "assessment"
+	default:
+		return "validation"
+	}
 }
 
 func splitCSV(value string) []string {
