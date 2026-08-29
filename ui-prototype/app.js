@@ -16,6 +16,7 @@ const viewNames = {
   dashboard: 'Dashboard',
   planning: 'Planning Board',
   organizations: 'Organizations',
+  ai: 'AI Solutions',
   services: 'Services',
   project: 'Project Pipeline',
   assessment: 'Assessment',
@@ -663,6 +664,13 @@ function renderServicesConsole(payload) {
 
   const serviceCards = [
     {
+      name: 'AI Solutions',
+      description: 'Governed assistants for migration risk, performance, CDC consistency, security, and operations.',
+      metric: '5 solution tracks',
+      action: 'Open AI catalog',
+      view: 'ai'
+    },
+    {
       name: 'Database Connections',
       description: 'Reusable Oracle and PostgreSQL endpoints under this tenant.',
       metric: `${connections.length} endpoints`,
@@ -797,6 +805,44 @@ function renderOrganizationConsole(payload) {
     </div>
   `).join('');
 }
+
+const aiSolutions = [
+  {
+    track: 'Migration AI',
+    name: 'Oracle-to-PostgreSQL Migration Copilot',
+    description: 'Explains assessment findings, ranks conversion risk, proposes rule-backed rewrites, and generates remediation plans without directly changing customer systems.',
+    signals: ['Oracle dictionary evidence', 'PL/SQL patterns', 'datatype rules', 'validation diffs'],
+    guardrail: 'AI can recommend, but conversion rules, approvals, tests, and agents must execute.'
+  },
+  {
+    track: 'Performance AI',
+    name: 'Plan Regression & Cast Risk Advisor',
+    description: 'Detects post-migration performance traps such as NUMERIC-to-BIGINT parameter mismatch, lost hints, collation changes, missing stats, and unstable plans.',
+    signals: ['pg_stat views', 'query fingerprints', 'index usage', 'function signatures'],
+    guardrail: 'Every tuning recommendation must include before/after evidence and rollback instructions.'
+  },
+  {
+    track: 'Reliability AI',
+    name: 'CDC Consistency & Cutover Guard',
+    description: 'Monitors snapshot boundaries, chunk manifests, CDC checkpoints, lag, restartability, and validation gates across global, schema-wave, and table-level modes.',
+    signals: ['SCN/checkpoints', 'load chunks', 'CDC lag', 'checksum results'],
+    guardrail: 'Cutover remains locked until required gates and human approvals are complete.'
+  },
+  {
+    track: 'Security AI',
+    name: 'Access, Secrets & Compliance Reviewer',
+    description: 'Reviews least-privilege requirements, role mapping, definer/invoker behavior, credential references, SSO posture, and audit completeness.',
+    signals: ['RBAC policy', 'agent scope', 'secret references', 'audit events'],
+    guardrail: 'SaaS stores metadata and references only; raw database credentials stay customer-side.'
+  },
+  {
+    track: 'Operations AI',
+    name: 'Migration Command Center Assistant',
+    description: 'Turns project telemetry into daily action plans, tickets, owner assignments, incident notes, customer updates, and post-cutover hypercare tasks.',
+    signals: ['jobs', 'evidence', 'tickets', 'agent health'],
+    guardrail: 'Operational suggestions are traceable to tenant-scoped evidence and never cross customer boundaries.'
+  }
+];
 
 function setText(id, value) {
   const el = document.getElementById(id);

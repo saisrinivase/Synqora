@@ -115,6 +115,53 @@ The first concrete ruleset is now:
 - cutover management
 - post-cutover hypercare
 
+## Synqora AI Solutions Architecture
+
+`Synqora AI Space` should be a governed database engineering workspace layered on top of the migration control plane, not a separate product and not an unsupervised code generator.
+
+The operating principle is:
+
+- `AI recommends`
+- `Rules validate`
+- `Agents execute`
+- `Humans approve`
+- `Evidence is stored`
+
+AI should work only from tenant-scoped context such as migration projects, Oracle discovery evidence, PostgreSQL target metadata, rule decisions, validation diffs, job telemetry, CDC checkpoints, audit events, and approved knowledge packs. It should not cross customer boundaries and should not require Synqora SaaS to store raw source data or raw database passwords.
+
+Primary solution tracks:
+
+- `Migration AI`
+  - explains Oracle-to-PostgreSQL assessment findings, ranks semantic risk, proposes datatype and PL/SQL remediation, and creates migration engineer action plans
+- `Performance AI`
+  - detects plan regression patterns, parameter/column datatype mismatch, implicit casts, lost Oracle hints, missing statistics, high sequential scan risk, and PostgreSQL indexing opportunities
+- `Reliability AI`
+  - reasons about snapshot mode, SCN/checkpoint consistency, chunk manifests, CDC lag, retry safety, restartability, validation gates, and cutover readiness
+- `Security AI`
+  - reviews least privilege, role/user mapping, definer/invoker behavior, SSO posture, credential references, agent scope, and audit completeness
+- `Operations AI`
+  - turns jobs, evidence, incidents, and validation state into daily work plans, tickets, status updates, runbooks, hypercare actions, and support summaries
+
+Safe AI control loop:
+
+1. `Collect Evidence`
+2. `Normalize Context`
+3. `Generate Recommendation`
+4. `Attach Confidence`
+5. `Require Approval`
+6. `Execute By Agent`
+7. `Validate Result`
+8. `Store Audit Trail`
+
+Guardrails:
+
+- AI recommendations must include source evidence, confidence, impact, rollback notes, and validation criteria.
+- High-risk operations such as schema deployment, data load, CDC start, destructive changes, and cutover require explicit approval gates.
+- Deterministic rule packs remain the source of truth for repeatable conversion decisions.
+- Customer-side agents perform database connectivity and execution near the source and target systems.
+- The SaaS control plane stores metadata, evidence references, and summaries, not raw customer credentials.
+- Every AI-assisted decision must be explainable later during architecture, audit, support, or incident review.
+
 ## Transport-Agnostic Migration Protocol
 
 Synqora should let customers choose the data movement transport while Synqora enforces the migration protocol.

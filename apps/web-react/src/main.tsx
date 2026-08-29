@@ -89,8 +89,8 @@ type OrganizationTenant = {
   status: string;
 };
 
-type ViewKey = 'dashboard' | 'planning' | 'organizations' | 'services' | 'project' | 'assessment' | 'converter' | 'dataload' | 'cdc' | 'validation' | 'cutover';
-type ReadinessViewKey = Exclude<ViewKey, 'dashboard' | 'planning' | 'organizations' | 'services' | 'project'>;
+type ViewKey = 'dashboard' | 'planning' | 'organizations' | 'ai' | 'services' | 'project' | 'assessment' | 'converter' | 'dataload' | 'cdc' | 'validation' | 'cutover';
+type ReadinessViewKey = Exclude<ViewKey, 'dashboard' | 'planning' | 'organizations' | 'ai' | 'services' | 'project'>;
 type ThemeMode = 'light' | 'dark';
 
 const themeStorageKey = 'synqora-theme';
@@ -257,6 +257,7 @@ function App() {
         <Topbar view={activeView} theme={theme} onToggleTheme={() => setTheme((current) => (current === 'dark' ? 'light' : 'dark'))} />
         {error && <div className="alert">{error}</div>}
         {activeView === 'planning' && <PlanningView />}
+        {activeView === 'ai' && <AISolutionsView />}
         {activeView === 'organizations' && (
           <OrganizationsView
             payload={dashboard}
@@ -280,7 +281,7 @@ function App() {
         )}
         {activeView === 'services' && <ServicesView payload={dashboard} setActiveView={setActiveView} onCreateConnection={handleCreateConnection} />}
         {activeView === 'project' && <ProjectView project={selectedProject} jobs={projectJobs} onCreateConnection={handleCreateConnection} />}
-        {activeView !== 'dashboard' && activeView !== 'planning' && activeView !== 'organizations' && activeView !== 'services' && activeView !== 'project' && <ReadinessView view={activeView as ReadinessViewKey} project={selectedProject} jobs={projectJobs} />}
+        {activeView !== 'dashboard' && activeView !== 'planning' && activeView !== 'organizations' && activeView !== 'ai' && activeView !== 'services' && activeView !== 'project' && <ReadinessView view={activeView as ReadinessViewKey} project={selectedProject} jobs={projectJobs} />}
       </main>
     </div>
   );
@@ -321,7 +322,7 @@ function Shell({ message }: { message: string }) {
 
 function Sidebar({ tenant, user, activeView, setActiveView }: { tenant?: Tenant; user?: User; activeView: ViewKey; setActiveView: (view: ViewKey) => void }) {
   const groups: Array<{ label: string; items: Array<[ViewKey, string]> }> = [
-    { label: 'Overview', items: [['dashboard', 'Dashboard'], ['planning', 'Planning Board'], ['organizations', 'Organizations'], ['services', 'Services'], ['project', 'Project Pipeline']] },
+    { label: 'Overview', items: [['dashboard', 'Dashboard'], ['planning', 'Planning Board'], ['organizations', 'Organizations'], ['ai', 'AI Solutions'], ['services', 'Services'], ['project', 'Project Pipeline']] },
     { label: 'Migration', items: [['assessment', 'Assessment'], ['converter', 'Schema Converter'], ['dataload', 'Data Load'], ['cdc', 'CDC / Replication']] },
     { label: 'Operations', items: [['validation', 'Validation'], ['cutover', 'Cutover Control']] }
   ];
@@ -343,6 +344,51 @@ function Sidebar({ tenant, user, activeView, setActiveView }: { tenant?: Tenant;
       <div className="tenant-chip">{tenant?.name || 'Tenant'}</div>
       <div className="user-chip">{user?.displayName || user?.email || 'User'}</div>
     </aside>
+  );
+}
+
+function AISolutionsView() {
+  return (
+    <section className="view">
+      <div className="view-header">
+        <div>
+          <h1>AI Solutions</h1>
+          <p>Evidence-grounded AI workspace for migration engineering, performance, reliability, security, and operations.</p>
+        </div>
+      </div>
+      <section className="ai-hero panel">
+        <div>
+          <span className="eyebrow">Synqora AI Space</span>
+          <h2>AI recommends. Rules validate. Agents execute. Humans approve.</h2>
+          <p>Synqora uses AI as a governed database engineering layer, not as an unsupervised migration robot. Every recommendation maps back to tenant-scoped evidence and safe execution gates.</p>
+        </div>
+        <div className="ai-control-stack">
+          <div><span>Context</span><strong>Tenant, project, inventory, rule pack, evidence</strong></div>
+          <div><span>Reasoning</span><strong>Risk explanation, remediation, runbook, next action</strong></div>
+          <div><span>Execution</span><strong>Approval-gated jobs delegated to customer-side agents</strong></div>
+        </div>
+      </section>
+      <div className="ai-solution-grid">
+        {aiSolutions.map((solution) => (
+          <article className="ai-solution-card" key={solution.name}>
+            <span>{solution.track}</span>
+            <strong>{solution.name}</strong>
+            <p>{solution.description}</p>
+            <small>Signals: {solution.signals.join(', ')}</small>
+          </article>
+        ))}
+      </div>
+      <section className="ai-operating-model panel">
+        <div>
+          <span className="eyebrow">Operating model</span>
+          <h2>Safe-by-default AI control loop</h2>
+          <p className="muted">AI output should never become direct database change without deterministic validation and approval.</p>
+        </div>
+        <div className="ai-loop">
+          {['Collect Evidence', 'Generate Recommendation', 'Attach Confidence', 'Require Approval', 'Execute By Agent', 'Store Audit Trail'].map((step) => <span key={step}>{step}</span>)}
+        </div>
+      </section>
+    </section>
   );
 }
 
@@ -517,6 +563,7 @@ function ServicesView({ payload, setActiveView, onCreateConnection }: { payload:
   const connections = payload?.connections || [];
   const projectById = new Map(projects.map((project) => [project.projectId, project]));
   const services: Array<{ name: string; description: string; metric: string; view: ViewKey }> = [
+    { name: 'AI Solutions', description: 'Governed assistants for migration risk, performance, CDC consistency, security, and operations.', metric: '5 solution tracks', view: 'ai' },
     { name: 'Database Connections', description: 'Reusable Oracle and PostgreSQL endpoints scoped to this tenant.', metric: `${connections.length} endpoints`, view: 'services' },
     { name: 'Migration Projects', description: 'Business wrappers for assessment, conversion, load, CDC, validation, and cutover.', metric: `${projects.length} projects`, view: 'dashboard' },
     { name: 'Agents & Connectivity', description: 'Customer-side execution plane for network checks, secrets, discovery, and validation.', metric: 'Agent ready', view: 'services' },
@@ -796,6 +843,7 @@ const viewLabels: Record<ViewKey, string> = {
   dashboard: 'Dashboard',
   planning: 'Planning Board',
   organizations: 'Organizations',
+  ai: 'AI Solutions',
   services: 'Services',
   project: 'Project Pipeline',
   assessment: 'Assessment',
@@ -874,6 +922,39 @@ const protocolGates = [
   'CDC caught up',
   'Validation passed',
   'Cutover approved'
+];
+
+const aiSolutions = [
+  {
+    track: 'Migration AI',
+    name: 'Oracle-to-PostgreSQL Migration Copilot',
+    description: 'Explains assessment findings, ranks conversion risk, proposes rule-backed rewrites, and generates remediation plans without directly changing customer systems.',
+    signals: ['Oracle dictionary evidence', 'PL/SQL patterns', 'datatype rules', 'validation diffs']
+  },
+  {
+    track: 'Performance AI',
+    name: 'Plan Regression & Cast Risk Advisor',
+    description: 'Detects post-migration performance traps such as NUMERIC-to-BIGINT parameter mismatch, lost hints, collation changes, missing stats, and unstable plans.',
+    signals: ['pg_stat views', 'query fingerprints', 'index usage', 'function signatures']
+  },
+  {
+    track: 'Reliability AI',
+    name: 'CDC Consistency & Cutover Guard',
+    description: 'Monitors snapshot boundaries, chunk manifests, CDC checkpoints, lag, restartability, and validation gates across consistency modes.',
+    signals: ['SCN/checkpoints', 'load chunks', 'CDC lag', 'checksum results']
+  },
+  {
+    track: 'Security AI',
+    name: 'Access, Secrets & Compliance Reviewer',
+    description: 'Reviews least-privilege requirements, role mapping, definer/invoker behavior, credential references, SSO posture, and audit completeness.',
+    signals: ['RBAC policy', 'agent scope', 'secret references', 'audit events']
+  },
+  {
+    track: 'Operations AI',
+    name: 'Migration Command Center Assistant',
+    description: 'Turns project telemetry into daily action plans, tickets, owner assignments, incident notes, customer updates, and post-cutover hypercare tasks.',
+    signals: ['jobs', 'evidence', 'tickets', 'agent health']
+  }
 ];
 
 function humanizeStatus(value: string) {
