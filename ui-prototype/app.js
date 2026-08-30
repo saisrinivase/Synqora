@@ -17,6 +17,7 @@ const viewNames = {
   planning: 'Planning Board',
   organizations: 'Organizations',
   ai: 'AI Solutions',
+  connectors: 'Source & Target Connectors',
   services: 'Services',
   project: 'Project Pipeline',
   assessment: 'Assessment',
@@ -42,6 +43,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initActiveProjectsCardHandler();
   initProjectCardHandlers();
   initServiceCardHandlers();
+  initConnectorHandlers();
   initOrganizationHandlers();
   initAuthHandlers();
   await initAuthSession();
@@ -402,6 +404,7 @@ async function initDashboardApi() {
     renderWorkspaceLabels(payload.tenant || {});
     renderDashboardEvidence(payload);
     renderServicesConsole(payload);
+    renderConnectorSummary(payload);
     renderOrganizationConsole(payload);
 
     const projects = payload.projects || [];
@@ -539,6 +542,38 @@ function initServiceCardHandlers() {
   });
 }
 
+function initConnectorHandlers() {
+  document.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-open-connector]');
+    if (!button) return;
+    openConnectionModal(button.dataset.openConnector || 'source');
+  });
+}
+
+function openConnectionModal(kind = 'source') {
+  const overlay = document.getElementById('connectionModalOverlay');
+  if (!overlay) return;
+
+  const isTarget = kind === 'target';
+  setInputValue('connectionRoleInput', isTarget ? 'target_migration' : 'source_assessment');
+  setInputValue('connectionEngineInput', isTarget ? 'PostgreSQL 16+' : 'Oracle 19c');
+  setInputValue('connectionPortInput', isTarget ? '5432' : '1521');
+  setInputValue('connectionServiceInput', isTarget ? 'database name' : 'service name / PDB');
+
+  const title = document.getElementById('connectionModalTitle');
+  const helper = document.getElementById('connectionModalHelper');
+  const submit = document.getElementById('createConnectionSubmit');
+  if (title) title.textContent = isTarget ? 'Create PostgreSQL Target Connector' : 'Create Oracle Source Connector';
+  if (helper) {
+    helper.textContent = isTarget
+      ? 'Target connectors are required for conversion validation, deployment, data load, CDC apply, and cutover validation.'
+      : 'Assessment starts with an Oracle source connector. The customer-side agent resolves credentials and validates source access.';
+  }
+  if (submit) submit.textContent = isTarget ? 'Create Target Connector' : 'Create Source Connector & Queue Assessment';
+
+  overlay.classList.add('visible');
+}
+
 function initOrganizationHandlers() {
   const form = document.getElementById('tenantCreateForm');
   if (!form) return;
@@ -671,11 +706,11 @@ function renderServicesConsole(payload) {
       view: 'ai'
     },
     {
-      name: 'Database Connections',
-      description: 'Reusable Oracle and PostgreSQL endpoints under this tenant.',
+      name: 'Source & Target Connectors',
+      description: 'Reusable Oracle source and PostgreSQL target endpoints under this tenant.',
       metric: `${connections.length} endpoints`,
       action: 'Create / troubleshoot',
-      view: 'services'
+      view: 'connectors'
     },
     {
       name: 'Migration Projects',
@@ -770,6 +805,56 @@ function renderServicesConsole(payload) {
       </tr>
     `;
   }).join('');
+}
+
+function renderConnectorSummary(payload) {
+  const projects = payload?.projects || [];
+  const connections = payload?.connections || [];
+  const sourceConnections = connections.filter((connection) => isSourceConnection(connection));
+  const targetConnections = connections.filter((connection) => isTargetConnection(connection));
+  const sourceBody = document.getElementById('sourceConnectorBody');
+  const targetBody = document.getElementById('targetConnectorBody');
+
+  setText('connectorSourceCount', String(sourceConnections.length));
+  setText('connectorTargetCount', String(targetConnections.length));
+  setText('connectorProjectCount', String(projects.length));
+
+  if (sourceBody) {
+    sourceBody.innerHTML = sourceConnections.length
+      ? sourceConnections.map((connection) => connectorRow(connection, projects)).join('')
+      : '<tr><td colspan="5">No Oracle source connectors yet. Create one to start assessment.</td></tr>';
+  }
+
+  if (targetBody) {
+    targetBody.innerHTML = targetConnections.length
+      ? targetConnections.map((connection) => connectorRow(connection, projects)).join('')
+      : '<tr><td colspan="5">No PostgreSQL target connectors yet. Add target later when conversion, load, CDC, or validation begins.</td></tr>';
+  }
+}
+
+function connectorRow(connection, projects) {
+  const project = projects.find((item) => item.projectId === connection.projectId);
+  const settings = connection.settingsJson || {};
+  return `
+    <tr>
+      <td><strong>${escapeHtml(connection.environmentName || settings.serviceName || 'Connector')}</strong><small>${escapeHtml(connection.environmentId || '')}</small></td>
+      <td>${escapeHtml(settings.engineVersion || connection.environmentType || 'Database')}</td>
+      <td>${statusBadge(humanizeStatus(connection.status || 'pending'), statusTone(connection.status))}</td>
+      <td>${escapeHtml(project?.projectCode || project?.name || 'Unassigned')}</td>
+      <td>${escapeHtml(settings.host || settings.hostName || 'Host pending')}<small>${escapeHtml(connection.networkZone || 'Agent zone pending')}</small></td>
+    </tr>
+  `;
+}
+
+function isTargetConnection(connection) {
+  const type = String(connection.environmentType || '').toLowerCase();
+  const settings = connection.settingsJson || {};
+  const engine = String(settings.engineVersion || settings.engine || connection.engine || '').toLowerCase();
+  return type.includes('target') || engine.includes('postgres');
+}
+
+function isSourceConnection(connection) {
+  return !isTargetConnection(connection);
 }
 
 function renderOrganizationConsole(payload) {
@@ -1879,7 +1964,7 @@ function initModalHandlers() {
 
   connectionButtons.forEach((button) => {
     button.addEventListener('click', () => {
-      if (connectionOverlay) connectionOverlay.classList.add('visible');
+      openConnectionModal('source');
     });
   });
 
@@ -2016,6 +2101,11 @@ async function submitConnectionCreate() {
 function getInputValue(id) {
   const element = document.getElementById(id);
   return String(element?.value || '').trim();
+}
+
+function setInputValue(id, value) {
+  const element = document.getElementById(id);
+  if (element) element.value = value;
 }
 
 // ---- Filter Handlers ----

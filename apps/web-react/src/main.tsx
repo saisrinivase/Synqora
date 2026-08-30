@@ -89,8 +89,8 @@ type OrganizationTenant = {
   status: string;
 };
 
-type ViewKey = 'dashboard' | 'planning' | 'organizations' | 'ai' | 'services' | 'project' | 'assessment' | 'converter' | 'dataload' | 'cdc' | 'validation' | 'cutover';
-type ReadinessViewKey = Exclude<ViewKey, 'dashboard' | 'planning' | 'organizations' | 'ai' | 'services' | 'project'>;
+type ViewKey = 'dashboard' | 'planning' | 'organizations' | 'ai' | 'connectors' | 'services' | 'project' | 'assessment' | 'converter' | 'dataload' | 'cdc' | 'validation' | 'cutover';
+type ReadinessViewKey = Exclude<ViewKey, 'dashboard' | 'planning' | 'organizations' | 'ai' | 'connectors' | 'services' | 'project'>;
 type ThemeMode = 'light' | 'dark';
 
 const themeStorageKey = 'synqora-theme';
@@ -231,9 +231,9 @@ function App() {
     await api.createConnection({
       ...input,
       projectId: selectedProjectId,
-      connectionRole: 'source_assessment',
-      engine: 'Oracle 19c',
-      startAssessment: true
+      connectionRole: input.connectionRole || 'source_assessment',
+      engine: input.engine || 'Oracle 19c',
+      startAssessment: (input.connectionRole || 'source_assessment') === 'source_assessment'
     });
     await refreshDashboard();
     setActiveView('project');
@@ -258,6 +258,7 @@ function App() {
         {error && <div className="alert">{error}</div>}
         {activeView === 'planning' && <PlanningView />}
         {activeView === 'ai' && <AISolutionsView />}
+        {activeView === 'connectors' && <ConnectorsView payload={dashboard} onCreateConnection={handleCreateConnection} />}
         {activeView === 'organizations' && (
           <OrganizationsView
             payload={dashboard}
@@ -281,7 +282,7 @@ function App() {
         )}
         {activeView === 'services' && <ServicesView payload={dashboard} setActiveView={setActiveView} onCreateConnection={handleCreateConnection} />}
         {activeView === 'project' && <ProjectView project={selectedProject} jobs={projectJobs} onCreateConnection={handleCreateConnection} />}
-        {activeView !== 'dashboard' && activeView !== 'planning' && activeView !== 'organizations' && activeView !== 'ai' && activeView !== 'services' && activeView !== 'project' && <ReadinessView view={activeView as ReadinessViewKey} project={selectedProject} jobs={projectJobs} />}
+        {activeView !== 'dashboard' && activeView !== 'planning' && activeView !== 'organizations' && activeView !== 'ai' && activeView !== 'connectors' && activeView !== 'services' && activeView !== 'project' && <ReadinessView view={activeView as ReadinessViewKey} project={selectedProject} jobs={projectJobs} />}
       </main>
     </div>
   );
@@ -322,7 +323,7 @@ function Shell({ message }: { message: string }) {
 
 function Sidebar({ tenant, user, activeView, setActiveView }: { tenant?: Tenant; user?: User; activeView: ViewKey; setActiveView: (view: ViewKey) => void }) {
   const groups: Array<{ label: string; items: Array<[ViewKey, string]> }> = [
-    { label: 'Overview', items: [['dashboard', 'Dashboard'], ['planning', 'Planning Board'], ['organizations', 'Organizations'], ['ai', 'AI Solutions'], ['services', 'Services'], ['project', 'Project Pipeline']] },
+    { label: 'Overview', items: [['dashboard', 'Dashboard'], ['planning', 'Planning Board'], ['organizations', 'Organizations'], ['ai', 'AI Solutions'], ['connectors', 'Source & Target Connectors'], ['services', 'Services'], ['project', 'Project Pipeline']] },
     { label: 'Migration', items: [['assessment', 'Assessment'], ['converter', 'Schema Converter'], ['dataload', 'Data Load'], ['cdc', 'CDC / Replication']] },
     { label: 'Operations', items: [['validation', 'Validation'], ['cutover', 'Cutover Control']] }
   ];
@@ -564,7 +565,7 @@ function ServicesView({ payload, setActiveView, onCreateConnection }: { payload:
   const projectById = new Map(projects.map((project) => [project.projectId, project]));
   const services: Array<{ name: string; description: string; metric: string; view: ViewKey }> = [
     { name: 'AI Solutions', description: 'Governed assistants for migration risk, performance, CDC consistency, security, and operations.', metric: '5 solution tracks', view: 'ai' },
-    { name: 'Database Connections', description: 'Reusable Oracle and PostgreSQL endpoints scoped to this tenant.', metric: `${connections.length} endpoints`, view: 'services' },
+    { name: 'Source & Target Connectors', description: 'Reusable Oracle source and PostgreSQL target endpoints scoped to this tenant.', metric: `${connections.length} endpoints`, view: 'connectors' },
     { name: 'Migration Projects', description: 'Business wrappers for assessment, conversion, load, CDC, validation, and cutover.', metric: `${projects.length} projects`, view: 'dashboard' },
     { name: 'Agents & Connectivity', description: 'Customer-side execution plane for network checks, secrets, discovery, and validation.', metric: 'Agent ready', view: 'services' },
     { name: 'Assessment', description: 'Oracle source discovery, risk detection, and evidence snapshots.', metric: `${jobs.filter((job) => job.jobType.includes('assessment') || job.jobType.includes('discover')).length} jobs`, view: 'assessment' },
@@ -625,9 +626,73 @@ function ServicesView({ payload, setActiveView, onCreateConnection }: { payload:
         })}
       </section>
       <div className="workspace-grid">
-        <ConnectionCreatePanel disabled={!projects.length} onCreateConnection={onCreateConnection} />
+        <ConnectionCreatePanel disabled={!projects.length} kind="source" onCreateConnection={onCreateConnection} />
       </div>
     </section>
+  );
+}
+
+function ConnectorsView({ payload, onCreateConnection }: { payload: DashboardPayload | null; onCreateConnection: (input: Record<string, string>) => Promise<void> }) {
+  const projects = payload?.projects || [];
+  const connections = payload?.connections || [];
+  const sourceConnections = connections.filter((connection) => !isTargetConnection(connection));
+  const targetConnections = connections.filter(isTargetConnection);
+  const projectById = new Map(projects.map((project) => [project.projectId, project]));
+
+  return (
+    <section className="view">
+      <div className="view-header">
+        <div>
+          <h1>Source & Target Connectors</h1>
+          <p>Register Oracle sources first, then add PostgreSQL targets when conversion, deployment, load, CDC, or validation begins.</p>
+        </div>
+      </div>
+      <section className="connector-architecture panel">
+        <div>
+          <span className="eyebrow">Connector architecture</span>
+          <h2>SaaS coordinates. Agents connect. Databases stay private.</h2>
+          <p className="muted">Synqora Cloud stores endpoint metadata and evidence. Customer-side agents resolve credentials from customer-managed vaults and run connectivity, discovery, validation, load, and CDC tasks near the databases.</p>
+        </div>
+        <div className="connector-flow">
+          {['Oracle Source', 'Synqora Agent', 'Synqora Cloud', 'PostgreSQL Target'].map((item) => <span key={item}>{item}</span>)}
+        </div>
+      </section>
+      <div className="connector-overview-grid">
+        <div className="panel connector-lane"><span>Source connector</span><strong>Oracle source first</strong><p>Connectivity, privilege validation, dictionary discovery, assessment, sizing, PL/SQL inventory, and CDC prerequisite checks.</p><small>{sourceConnections.length} configured</small></div>
+        <div className="panel connector-lane"><span>Target connector</span><strong>PostgreSQL target later</strong><p>Conversion validation, deployment, full load, CDC apply, semantic checks, and cutover rehearsal.</p><small>{targetConnections.length} configured</small></div>
+        <div className="panel connector-lane"><span>Project scope</span><strong>Connectors attach to projects</strong><p>One organization can register many endpoints, but execution stays tenant-scoped and project-scoped through the Synqora Agent.</p><small>{projects.length} projects</small></div>
+      </div>
+      <div className="connector-detail-grid">
+        <section className="panel connector-detail">
+          <h2>Oracle Source Connectors</h2>
+          <p className="muted">Required for assessment. Target is not required yet.</p>
+          <ConnectionCreatePanel disabled={!projects.length} kind="source" onCreateConnection={onCreateConnection} />
+          {!sourceConnections.length && <EmptyState text="No Oracle source connectors yet. Create one to start assessment." />}
+          {sourceConnections.map((connection) => <ConnectorRow key={connection.environmentId} connection={connection} projectName={projectById.get(connection.projectId)?.projectCode || 'Unassigned'} />)}
+        </section>
+        <section className="panel connector-detail">
+          <h2>PostgreSQL Target Connectors</h2>
+          <p className="muted">Required after assessment for deploy, load, CDC, validation, and cutover.</p>
+          <ConnectionCreatePanel disabled={!projects.length} kind="target" onCreateConnection={onCreateConnection} />
+          {!targetConnections.length && <EmptyState text="No PostgreSQL target connectors yet. Add target when the migration plan is approved." />}
+          {targetConnections.map((connection) => <ConnectorRow key={connection.environmentId} connection={connection} projectName={projectById.get(connection.projectId)?.projectCode || 'Unassigned'} />)}
+        </section>
+      </div>
+    </section>
+  );
+}
+
+function ConnectorRow({ connection, projectName }: { connection: Connection; projectName: string }) {
+  const settings = connection.settingsJson || {};
+  return (
+    <div className="inventory-row">
+      <strong>{connection.environmentName}</strong>
+      <span>{String(settings.engineVersion || connection.environmentType || 'Database')}</span>
+      <span>{humanizeStatus(connection.status)}</span>
+      <span>{projectName}</span>
+      <span>{String(settings.host || settings.hostName || 'Host pending')}</span>
+      <span>{connection.networkZone || 'Agent zone pending'}</span>
+    </div>
   );
 }
 
@@ -794,19 +859,27 @@ function ProjectCreatePanel({ onCreateProject }: { onCreateProject: (input: Reco
   );
 }
 
-function ConnectionCreatePanel({ disabled = false, onCreateConnection }: { disabled?: boolean; onCreateConnection: (input: Record<string, string>) => Promise<void> }) {
-  const [form, setForm] = useState({ host: '', port: '1521', serviceName: '', schemaScope: '', credentialReference: '', agentNetworkZone: '' });
+function ConnectionCreatePanel({ disabled = false, kind = 'source', onCreateConnection }: { disabled?: boolean; kind?: 'source' | 'target'; onCreateConnection: (input: Record<string, string>) => Promise<void> }) {
+  const isTarget = kind === 'target';
+  const [form, setForm] = useState({
+    host: '',
+    port: isTarget ? '5432' : '1521',
+    serviceName: '',
+    schemaScope: '',
+    credentialReference: '',
+    agentNetworkZone: ''
+  });
   return (
-    <form className="panel" onSubmit={(event) => { event.preventDefault(); if (!disabled) onCreateConnection(form).catch(() => undefined); }}>
-      <h2>Oracle Source Connection</h2>
-      {disabled && <p className="muted">Create or select a project before adding a connection.</p>}
+    <form className="panel connector-create-panel" onSubmit={(event) => { event.preventDefault(); if (!disabled) onCreateConnection({ ...form, connectionRole: isTarget ? 'target_migration' : 'source_assessment', engine: isTarget ? 'PostgreSQL 16+' : 'Oracle 19c' }).catch(() => undefined); }}>
+      <h2>{isTarget ? 'PostgreSQL Target Connector' : 'Oracle Source Connector'}</h2>
+      {disabled && <p className="muted">Create or select a project before adding a connector.</p>}
       <Field label="Host" value={form.host} onChange={(value) => setForm({ ...form, host: value })} />
       <Field label="Port" value={form.port} onChange={(value) => setForm({ ...form, port: value })} />
-      <Field label="Service Name" value={form.serviceName} onChange={(value) => setForm({ ...form, serviceName: value })} />
+      <Field label={isTarget ? 'Database Name' : 'Service Name / PDB'} value={form.serviceName} onChange={(value) => setForm({ ...form, serviceName: value })} />
       <Field label="Schema Scope" value={form.schemaScope} onChange={(value) => setForm({ ...form, schemaScope: value })} />
       <Field label="Credential Reference" value={form.credentialReference} onChange={(value) => setForm({ ...form, credentialReference: value })} />
       <Field label="Agent Zone" value={form.agentNetworkZone} onChange={(value) => setForm({ ...form, agentNetworkZone: value })} />
-      <button type="submit" disabled={disabled}>Create Connection & Queue Assessment</button>
+      <button type="submit" disabled={disabled}>{isTarget ? 'Create Target Connector' : 'Create Source Connector & Queue Assessment'}</button>
     </form>
   );
 }
@@ -844,6 +917,7 @@ const viewLabels: Record<ViewKey, string> = {
   planning: 'Planning Board',
   organizations: 'Organizations',
   ai: 'AI Solutions',
+  connectors: 'Source & Target Connectors',
   services: 'Services',
   project: 'Project Pipeline',
   assessment: 'Assessment',
@@ -923,6 +997,13 @@ const protocolGates = [
   'Validation passed',
   'Cutover approved'
 ];
+
+function isTargetConnection(connection: Connection) {
+  const type = String(connection.environmentType || '').toLowerCase();
+  const settings = connection.settingsJson || {};
+  const engine = String(settings.engineVersion || settings.engine || '').toLowerCase();
+  return type.includes('target') || engine.includes('postgres');
+}
 
 const aiSolutions = [
   {
